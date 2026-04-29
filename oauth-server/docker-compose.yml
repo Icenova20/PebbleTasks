@@ -1,0 +1,27 @@
+# PebbleTasks OAuth + settings server (Raspberry Pi / production)
+# 1. Copy .env.example to .env and set GOOGLE_*, BASE_PUBLIC_URL (https://your-domain)
+# 2. docker compose up -d
+# 3. Put a reverse proxy (Caddy, nginx) in front for TLS; BASE_PUBLIC_URL must use https:// and match Google redirect URI
+
+services:
+  pebbletasks-oauth:
+    build: .
+    image: pebbletasks-oauth:local
+    container_name: pebbletasks-oauth
+    restart: unless-stopped
+    env_file:
+      - .env
+    ports:
+      # Host port (e.g. on your Pi) -> container 3847 (do not change the right side)
+      - "${HOST_PORT:-3847}:3847"
+    environment:
+      # Force listen port inside the image so healthcheck and proxy stay predictable
+      PORT: "3847"
+      NODE_ENV: production
+    # Set GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, BASE_PUBLIC_URL in .env (and optional HOST_PORT above)
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1:3847/"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
