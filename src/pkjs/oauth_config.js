@@ -3,5 +3,5 @@
  * Do not use http://127.0.0.1 or http://localhost on the phone — that is the device itself.
  */
 module.exports = {
-  settingsBaseUrl: 'https://shan-pi.tailf99291.ts.net',
+  settingsBaseUrl: 'https://pebbletasks.shansrini.com',
 };

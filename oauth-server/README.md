@@ -38,6 +38,9 @@ Use HTTPS in production; `BASE_PUBLIC_URL` must match the public URL Pebble’s 
 
 In the watch project, set `src/pkjs/oauth_config.js` `settingsBaseUrl` to this server’s public URL (same origin as `BASE_PUBLIC_URL`).
 
+Current production URL:
+- `https://pebbletasks.shansrini.com`
+
 ## Security notes
 
 - Never commit `.env` or log refresh tokens.
