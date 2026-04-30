@@ -121,7 +121,7 @@ void ui_draw_add_labeled_row(GContext *ctx, const Layer *cell_layer, bool is_tas
   const GBitmap *ic = is_task_list ? ui_assets_add_list() : ui_assets_add_task();
   const char *label = is_task_list ? "Add list" : "Add task";
   menu_text_antialias(ctx);
-  GFont f = fonts_get_system_font(FONT_KEY_GOTHIC_18);
+  GFont f = fonts_get_system_font(FONT_KEY_GOTHIC_18_BOLD);
   graphics_context_set_text_color(ctx, hi ? theme_highlight_text() : theme_text());
 
   int ix = UI_CELL_MARGIN;

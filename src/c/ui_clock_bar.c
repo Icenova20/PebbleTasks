@@ -22,8 +22,9 @@ static void time_proc(Layer *layer, GContext *ctx) {
   graphics_context_set_text_color(ctx, theme_status_fg());
   graphics_context_set_antialiased(ctx, PBL_IF_BW_ELSE(false, true));
 
-  GFont tfont = fonts_get_system_font(FONT_KEY_GOTHIC_14);
-  GFont brand_font = fonts_get_system_font(FONT_KEY_GOTHIC_09);
+  /* PebbleChecklist: GOTHIC_18_BOLD for “No items” / dialogs; GOTHIC_18 for de-emph. label. */
+  GFont tfont = fonts_get_system_font(FONT_KEY_GOTHIC_18_BOLD);
+  GFont brand_font = fonts_get_system_font(FONT_KEY_GOTHIC_18);
   static const char *const brand = "PebbleTasks";
 
   /* Reserve right strip for app name; time is left, truncated before overlap. */
