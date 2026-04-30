@@ -326,6 +326,11 @@ ${
 <label><input type="radio" name="theme_preset" value="3"${checkT3}/> High contrast (white + black)</label>
 </div>
 <button type="button" id="save">Save &amp; return to Pebble</button>
+<p class="hint" style="margin:.9rem 0 0 0">
+  <a href="/privacy" target="_blank" rel="noopener noreferrer">Privacy Policy</a>
+  &nbsp;|&nbsp;
+  <a href="/terms" target="_blank" rel="noopener noreferrer">Terms of Service</a>
+</p>
 <div id="googleBlock">
 <p class="warn" id="googleNote">Sign in with Google in your device’s browser, then return to Ribble.</p>
 <p class="hint" id="copyHint">1. Copy the link below. 2. Open your browser, paste and go. 3. When Google is done, switch back to Ribble.</p>
@@ -553,6 +558,26 @@ ${
 </body></html>`;
 }
 
+function legalPageHtml(title, bodyHtml) {
+  return `<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>${escapeHtml(title)} — PebbleTasks</title>
+<style>
+html,body{background:#fff;color:#111;margin:0;-webkit-text-size-adjust:100%}
+body{font-family:Helvetica,Arial,sans-serif;max-width:34rem;margin:1.5rem auto;padding:0 1rem;line-height:1.5}
+h1{font-size:1.15rem;margin:.2rem 0 .8rem 0}
+h2{font-size:1rem;margin:1rem 0 .4rem 0}
+p,li{font-size:.95rem}
+a{color:#0b57d0}
+.muted{color:#555;font-size:.85rem}
+</style></head><body>
+<h1>${escapeHtml(title)}</h1>
+${bodyHtml}
+<p class="muted">Last updated: ${new Date().toISOString().slice(0, 10)}</p>
+<p><a href="/">Back to PebbleTasks settings</a></p>
+</body></html>`;
+}
+
 app.get('/', (req, res) => {
   const cfg = env();
   // return_to, current_mode, signed_in are read in the page via getQueryParam (Rebble app-configuration-static pattern).
@@ -585,6 +610,73 @@ app.get('/', (req, res) => {
         initialTheme
       )
     );
+});
+
+app.get('/privacy', (_req, res) => {
+  res.type('html').send(
+    legalPageHtml(
+      'Privacy Policy',
+      `
+<p>PebbleTasks is a hobby project. This page describes how data is handled.</p>
+<h2>What we collect</h2>
+<ul>
+  <li>Configuration choices you submit in the settings page (for example: local vs Google mode, theme).</li>
+  <li>OAuth tokens only when you choose Google mode.</li>
+</ul>
+<h2>How data is used</h2>
+<ul>
+  <li>To enable task syncing with Google Tasks when you opt in.</li>
+  <li>To return settings and tokens back to the Pebble companion flow.</li>
+</ul>
+<h2>Data storage</h2>
+<ul>
+  <li>Primary token storage is intended to be on the phone companion app.</li>
+  <li>This server may temporarily hold OAuth payloads during sign-in handoff.</li>
+</ul>
+<h2>Third-party services</h2>
+<p>PebbleTasks depends on third-party services and software (including Google APIs, Rebble/Pebble companion behavior, hosting, DNS, and network providers). Their outages, policy changes, or platform behavior can affect functionality.</p>
+<h2>Security limitations</h2>
+<p>Reasonable efforts may be used, but no method of transmission or storage is 100% secure. Use at your own risk.</p>
+<h2>Google account permissions</h2>
+<p>If you connect Google, you can revoke PebbleTasks access at any time from your Google account permissions page.</p>
+<h2>Your data ownership</h2>
+<p>You retain ownership of your task data. PebbleTasks does not claim ownership of your content.</p>
+<h2>No guarantees</h2>
+<p>This is an as-is hobby project. No guarantees are made about availability, security, fitness for any purpose, or data retention.</p>
+<h2>Policy changes</h2>
+<p>This policy may be updated at any time. Continued use after updates means you accept the revised policy.</p>
+`
+    )
+  );
+});
+
+app.get('/terms', (_req, res) => {
+  res.type('html').send(
+    legalPageHtml(
+      'Terms of Service',
+      `
+<p>By using PebbleTasks, you agree to these terms.</p>
+<h2>Hobby project</h2>
+<p>PebbleTasks is provided as a personal hobby project and may change or stop at any time without notice.</p>
+<h2>No liability</h2>
+<p>To the maximum extent permitted by law, the developer disclaims all liability for any loss, damage, claim, or consequence arising from use, misuse, inability to use, or reliance on PebbleTasks in any manner whatsoever.</p>
+<h2>No warranties</h2>
+<p>The service is provided “as is” and “as available”, with no express or implied warranties.</p>
+<h2>No affiliation</h2>
+<p>PebbleTasks is an independent project and is not affiliated with, endorsed by, or sponsored by Google, Pebble, or Rebble. All trademarks belong to their respective owners.</p>
+<h2>Third-party dependency</h2>
+<p>Features may rely on third-party platforms, APIs, and network connectivity. These dependencies may fail, change, or be withdrawn at any time.</p>
+<h2>No support or service levels</h2>
+<p>No service-level agreement, uptime guarantee, update schedule, or support obligation is provided.</p>
+<h2>Your responsibility</h2>
+<p>You are responsible for how you use the app, your account permissions, and your own backups.</p>
+<h2>Changes to terms</h2>
+<p>These terms may be updated at any time. Continued use after updates constitutes acceptance of the revised terms.</p>
+<h2>Severability</h2>
+<p>If any part of these terms is found unenforceable, the remaining terms continue in full effect.</p>
+`
+    )
+  );
 });
 
 app.get('/oauth/complete', (req, res) => {
