@@ -82,6 +82,13 @@ function tryPullStagedDeviceAuth() {
 }
 
 Pebble.addEventListener('ready', function () {
+  /* Hardcoded OAuth paste sets credentials but not mode; force google before first native→JS message. */
+  var hcRaw = oauthConfig.hardcodedAccessToken;
+  var hc =
+    typeof hcRaw === 'string' ? hcRaw.replace(/^\s+|\s+$/g, '') : '';
+  if (hc.length > 0 && authStorage.getAuthObject()) {
+    authStorage.setMode('google');
+  }
   if (authStorage.getMode() === 'google' && !authStorage.getAuthObject()) {
     tryPullStagedDeviceAuth();
   }

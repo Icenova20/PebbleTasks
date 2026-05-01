@@ -24,6 +24,15 @@ static int s_main_real_list_count;
 static bool s_main_suppress_next_select_click;
 static bool s_adding_list;
 
+/** PKJS may attach appmessage after the first outbound CMD_W_ASK_LISTS; retry lists shortly after load. */
+static AppTimer *s_lists_retry_timer;
+
+static void main_menu_delayed_lists_cb(void *data) {
+  (void)data;
+  s_lists_retry_timer = NULL;
+  messaging_request_lists();
+}
+
 bool main_menu_is_adding_list(void) { return s_adding_list; }
 
 void main_menu_set_adding_list(bool add_list) { s_adding_list = add_list; }
@@ -203,10 +212,19 @@ void main_menu_window_load(Window *w) {
   main_menu_reload_from_payload("");
   ui_loading_start(root);
   messaging_request_lists();
+  if (s_lists_retry_timer) {
+    app_timer_cancel(s_lists_retry_timer);
+    s_lists_retry_timer = NULL;
+  }
+  s_lists_retry_timer = app_timer_register(450, main_menu_delayed_lists_cb, NULL);
 }
 
 void main_menu_window_unload(Window *w) {
   (void)w;
+  if (s_lists_retry_timer) {
+    app_timer_cancel(s_lists_retry_timer);
+    s_lists_retry_timer = NULL;
+  }
   ui_loading_stop();
   destroy_main_menu_layers();
   destroy_main_menu_data();

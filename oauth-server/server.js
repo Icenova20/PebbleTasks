@@ -13,15 +13,14 @@ const { URL, URLSearchParams } = require('url');
 
 const app = express();
 /**
- * Rebble/PebbleKit JS: requests may send `Origin: null`. `Access-Control-Allow-Origin: *`
- * does not satisfy CORS for those clients — they can see xhr.status === 0 even when the
- * server returned 200. Echo `null` or the real Origin so POST /oauth/refresh bodies are readable.
+ * Rebble/PebbleKit JS XHR: `Access-Control-Allow-Origin: *` does not satisfy
+ * CORS for `Origin: null` (file:/ embedded runtimes) — the browser may hide
+ * the response and report xhr.status === 0 even when the server returned 200.
+ * Echo the request Origin (or `null`) so the client can read the body.
  */
 app.use((req, res, next) => {
   const origin = req.headers.origin;
-  if (origin === 'null') {
-    res.setHeader('Access-Control-Allow-Origin', 'null');
-  } else if (origin) {
+  if (origin) {
     res.setHeader('Access-Control-Allow-Origin', origin);
     res.setHeader('Vary', 'Origin');
   } else {

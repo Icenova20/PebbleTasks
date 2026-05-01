@@ -40,6 +40,19 @@ function httpJsonAsync(method, url, accessToken, bodyObj, callback) {
   httpJsonDirectAsync(method, url, accessToken, bodyObj, callback);
 }
 
+/** PebbleKit JS: localeCompare / ICU options throw RangeError — use plain UTF-16 order. */
+function cmpString16(a, b) {
+  var s = String(a || '');
+  var t = String(b || '');
+  if (s < t) {
+    return -1;
+  }
+  if (s > t) {
+    return 1;
+  }
+  return 0;
+}
+
 function cmpPosition(a, b) {
   if (a === b) {
     return 0;
@@ -50,7 +63,7 @@ function cmpPosition(a, b) {
   if (!b) {
     return 1;
   }
-  return String(a).localeCompare(String(b), undefined, { numeric: true });
+  return cmpString16(a, b);
 }
 
 function sortTasksByPosition(items) {
@@ -68,7 +81,7 @@ function listTaskListsSortedAsync(accessToken, callback) {
     var items = res.json.items || [];
     callback(
       items.slice().sort(function (a, b) {
-        return (a.title || '').localeCompare(b.title || '');
+        return cmpString16(a.title, b.title);
       })
     );
   });
