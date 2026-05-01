@@ -3,6 +3,105 @@ var oauthConfig = require('./oauth_config');
 var MODE_KEY = 'pebbletasks_mode';
 var AUTH_KEY = 'pebbletasks_google_auth';
 
+/** PebbleKit JS may not define `atob`; payload is ASCII JSON after decode. */
+function base64DecodeToBinaryString(b64) {
+  var alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=';
+  var input = String(b64).replace(/[^A-Za-z0-9+/=]/g, '');
+  var out = '';
+  var bc = 0;
+  var bs = 0;
+  var buffer;
+  var idx = 0;
+  while ((buffer = input.charAt(idx++))) {
+    buffer = alphabet.indexOf(buffer);
+    if (buffer === -1) {
+      continue;
+    }
+    bs = bc % 4 ? bs * 64 + buffer : buffer;
+    if (bc++ % 4) {
+      out += String.fromCharCode(255 & (bs >> ((-2 * bc) & 6)));
+    }
+  }
+  return out;
+}
+
+function decodePebbleTasksPayloadBase64(b64) {
+  var txt;
+  try {
+    txt = typeof atob === 'function' ? atob(b64) : base64DecodeToBinaryString(b64);
+  } catch (e) {
+    return null;
+  }
+  try {
+    return JSON.parse(txt);
+  } catch (e2) {
+    return null;
+  }
+}
+
+/** Same shapes as oauth-server parsePastedAuthLineToPayload — PEBBLETASKS1 + base64(JSON) or raw JSON. */
+function parsePastedAuthLine(s) {
+  s = typeof s === 'string' ? s.replace(/^\s+|\s+$/g, '') : '';
+  if (!s) {
+    return null;
+  }
+  var PREFIX = 'PEBBLETASKS1';
+  if (s.indexOf(PREFIX) === 0) {
+    return decodePebbleTasksPayloadBase64(s.slice(PREFIX.length));
+  }
+  try {
+    return JSON.parse(s);
+  } catch (a) {
+    /* */
+  }
+  try {
+    return JSON.parse(decodeURIComponent(s));
+  } catch (b) {
+    return null;
+  }
+}
+
+/**
+ * @returns {{ access_token: string, refresh_token: string | null, expires_at_ms: number } | null}
+ */
+function authObjectFromHardcoded(raw) {
+  if (typeof raw !== 'string' || !raw.length) {
+    return null;
+  }
+  var o = parsePastedAuthLine(raw);
+  if (o && o.access_token) {
+    var rt = o.refresh_token ? String(o.refresh_token) : null;
+    /*
+     * OAuth `expires_in` is relative to token issue time, which we do not have in a static paste.
+     * Treating Date.now()+expires_in wrongly marks stale access tokens as “still fresh” and skips
+     * refresh — Google returns 401 and list APIs yield empty. If we have a refresh_token, omit
+     * expires_at_ms so the client refreshes before first use.
+     */
+    var expMs;
+    if (rt) {
+      expMs = undefined;
+    } else if (o.expires_in != null && !isNaN(Number(o.expires_in))) {
+      expMs = Date.now() + Number(o.expires_in) * 1000;
+    } else {
+      expMs = Date.now() + 10 * 365 * 24 * 60 * 60 * 1000;
+    }
+    return {
+      access_token: String(o.access_token),
+      refresh_token: rt,
+      expires_at_ms: expMs,
+    };
+  }
+  var plain = raw.replace(/^\s+|\s+$/g, '');
+  if (plain.length) {
+    return {
+      access_token: plain,
+      refresh_token: null,
+      expires_at_ms: Date.now() + 10 * 365 * 24 * 60 * 60 * 1000,
+    };
+  }
+  return null;
+}
+
 function getMode() {
   var m = localStorage.getItem(MODE_KEY);
   if (m === 'google') {
@@ -18,6 +117,13 @@ function setMode(mode) {
 }
 
 function getAuthObject() {
+  var hc = oauthConfig.hardcodedAccessToken;
+  if (typeof hc === 'string' && hc.length > 0) {
+    var hard = authObjectFromHardcoded(hc);
+    if (hard) {
+      return hard;
+    }
+  }
   var raw = localStorage.getItem(AUTH_KEY);
   if (!raw) {
     return null;
@@ -88,7 +194,7 @@ function getValidAccessTokenAsync(callback) {
   }
   if (!auth.refresh_token) {
     setTimeout(function () {
-      callback(null);
+      callback(auth.access_token);
     }, 0);
     return;
   }
