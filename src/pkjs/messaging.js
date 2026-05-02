@@ -35,10 +35,10 @@ function sendToWatch(dict) {
   );
 }
 
-/** Named color palette 0..THEME_NUM_PRESETS-1; must match src/c/theme.h */
+/** Single dark theme on watch (THEME_NUM_PRESETS 1); kept for API compatibility. */
 function pushThemePreset(presetId) {
   var n = parseInt(presetId, 10);
-  if (isNaN(n) || n < 0 || n > 3) {
+  if (isNaN(n) || n !== 0) {
     return;
   }
   var d = {};

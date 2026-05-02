@@ -3,30 +3,6 @@ var commandHandlers = require('./command_handlers');
 var oauthConfig = require('./oauth_config');
 var authStorage = require('./auth_storage');
 
-var DEVICE_KEY = 'pebbletasks_device_id';
-var LS_THEME_PRESET = 'pebbletasks_themePreset';
-
-/**
- * Opaque 32-hex id so the server can hold a one-time copy of a token if pebblejs://
- * returns an empty result (common on iOS) — see /oauth/device-pull.
- */
-function getDeviceId() {
-  try {
-    var s = localStorage.getItem(DEVICE_KEY);
-    if (s && /^[0-9a-f]{32}$/i.test(s)) {
-      return s.toLowerCase();
-    }
-  } catch (e) {}
-  var hex = '';
-  for (var i = 0; i < 32; i += 1) {
-    hex += Math.floor(Math.random() * 16).toString(16);
-  }
-  try {
-    localStorage.setItem(DEVICE_KEY, hex);
-  } catch (e2) {}
-  return hex;
-}
-
 function applyConfigObject(cfg) {
   if (!cfg) {
     return;
@@ -42,55 +18,14 @@ function applyConfigObject(cfg) {
   } else if (cfg.mode === 'local' || cfg.mode === 'google') {
     authStorage.setMode(cfg.mode);
   }
-  if (cfg.themePreset !== undefined && cfg.themePreset !== null) {
-    var tp = parseInt(String(cfg.themePreset), 10);
-    if (!isNaN(tp) && tp >= 0 && tp <= 3) {
-      try {
-        localStorage.setItem(LS_THEME_PRESET, String(tp));
-      } catch (e) {}
-      messaging.pushThemePreset(tp);
-    }
-  }
-}
-
-/** When POST /oauth/watch-fragment stashed this device, recover when webview gave no fragment. */
-function tryPullStagedDeviceAuth() {
-  var base = (oauthConfig.settingsBaseUrl || '').replace(/\/$/, '');
-  if (settingsUrlUnreachableFromPhone(base)) {
-    return false;
-  }
-  var d = getDeviceId();
-  var u = base + '/oauth/device-pull?d=' + encodeURIComponent(d);
-  var xhr = new XMLHttpRequest();
-  try {
-    xhr.open('GET', u, false);
-    xhr.setRequestHeader('Accept', 'application/json');
-    xhr.send(null);
-  } catch (er) {
-    return false;
-  }
-  if (xhr.status !== 200) {
-    return false;
-  }
-  try {
-    var o = JSON.parse(xhr.responseText);
-    applyConfigObject(o);
-    return !!o.access_token;
-  } catch (e2) {
-    return false;
-  }
 }
 
 Pebble.addEventListener('ready', function () {
-  /* Hardcoded OAuth paste sets credentials but not mode; force google before first native→JS message. */
   var hcRaw = oauthConfig.hardcodedAccessToken;
   var hc =
     typeof hcRaw === 'string' ? hcRaw.replace(/^\s+|\s+$/g, '') : '';
   if (hc.length > 0 && authStorage.getAuthObject()) {
     authStorage.setMode('google');
-  }
-  if (authStorage.getMode() === 'google' && !authStorage.getAuthObject()) {
-    tryPullStagedDeviceAuth();
   }
 });
 
@@ -159,35 +94,19 @@ Pebble.addEventListener('showConfiguration', function (e) {
     openSettingsUrlHelpPage();
     return;
   }
-  if (authStorage.getMode() === 'google' && !authStorage.getAuthObject()) {
-    tryPullStagedDeviceAuth();
-  }
   var ret = getConfigurationReturnTo(e);
   var modeQ = 'current_mode=' + encodeURIComponent(authStorage.getMode() === 'google' ? 'google' : 'local');
   var auth = authStorage.getAuthObject();
   var hasGoogleAuth = !!(auth && (auth.access_token || auth.refresh_token));
   var signedQ = 'signed_in=' + (hasGoogleAuth ? '1' : '0');
-  var dQ = 'd=' + encodeURIComponent(getDeviceId());
-  var themeParam = '0';
-  try {
-    var tsv = localStorage.getItem(LS_THEME_PRESET);
-    if (tsv !== null && tsv !== undefined) {
-      var tpn = parseInt(String(tsv), 10);
-      if (!isNaN(tpn) && tpn >= 0 && tpn <= 3) {
-        themeParam = String(tpn);
-      }
-    }
-  } catch (e) {}
-  var themeQ = 'theme_preset=' + encodeURIComponent(themeParam);
   var startUrl =
-    base + '/?return_to=' + encodeURIComponent(ret) + '&' + modeQ + '&' + signedQ + '&' + dQ + '&' + themeQ;
+    base + '/?return_to=' + encodeURIComponent(ret) + '&' + modeQ + '&' + signedQ;
   Pebble.openURL(startUrl);
 });
 
 /**
  * Fragment from config close URL (return_to + encodeURIComponent(JSON)).
- * Rebble: JSON.parse(decodeURIComponent(e.response)) in webviewclosed.
- * https://developer.repebble.com/guides/user-interfaces/app-configuration-static/
+ * https://developer.rebble.io/guides/user-interfaces/app-configuration-static/
  */
 function tryParseConfigFragment(s) {
   s = typeof s === 'string' ? s : String(s);
@@ -210,61 +129,21 @@ Pebble.addEventListener('webviewclosed', function (e) {
   if (e && e.response === -1) {
     return;
   }
-  if (!e) {
-    tryPullStagedDeviceAuth();
-    return;
-  }
-  if (e.response === undefined || e.response === null) {
-    tryPullStagedDeviceAuth();
+  if (!e || e.response === undefined || e.response === null) {
     return;
   }
   try {
     var s = typeof e.response === 'string' ? e.response : String(e.response);
     if (s.length === 0) {
-      tryPullStagedDeviceAuth();
       return;
     }
     var cfg = tryParseConfigFragment(s);
     if (!cfg) {
-      if (tryPullStagedDeviceAuth()) {
-        return;
-      }
       return;
     }
-    if (cfg && cfg.w && typeof cfg.w === 'string' && !cfg.access_token) {
-      var claim = oauthConfig.settingsBaseUrl.replace(/\/$/, '') + '/oauth/watch-claim?id=' + encodeURIComponent(cfg.w);
-      var xhr = new XMLHttpRequest();
-      try {
-        xhr.open('GET', claim, false);
-        xhr.setRequestHeader('Accept', 'application/json');
-        xhr.send(null);
-      } catch (netErr) {
-        if (tryPullStagedDeviceAuth()) {
-          return;
-        }
-        return;
-      }
-      if (xhr.status !== 200) {
-        if (tryPullStagedDeviceAuth()) {
-          return;
-        }
-        return;
-      }
-      try {
-        cfg = JSON.parse(xhr.responseText);
-      } catch (parseErr) {
-        if (tryPullStagedDeviceAuth()) {
-          return;
-        }
-        return;
-      }
-    }
     applyConfigObject(cfg);
-    if (authStorage.getMode() === 'google' && !authStorage.getAuthObject()) {
-      tryPullStagedDeviceAuth();
-    }
   } catch (err) {
-    tryPullStagedDeviceAuth();
+    /* ignore */
   }
 });
 

@@ -45,3 +45,4 @@ Current production URL:
 
 - Never commit `.env` or log refresh tokens.
 - Use TLS for production OAuth redirects allowed by Google.
+- The server does **not** store user OAuth tokens or credentials; after `/oauth/callback` it redirects with tokens only in the `return_to` URL fragment (`pebblejs://close#…`), matching Rebble’s static config pattern.

@@ -24,53 +24,15 @@ static void load_palette_for_preset(int p) {
     p = THEME_NUM_PRESETS - 1;
   }
   s_preset = p;
-  /*
-   * One 64-color palette for all hardware; the stack maps to the display (dithering on 1-bit).
-   * See pebble-watchface skill: do not use a second PBL_BW table that collapsed presets 0/2/3.
-   */
-  switch (s_preset) {
-    case 0: /* Classic */
-      s_bg = GColorYellow;
-      s_text = GColorBlack;
-      s_hi_bg = GColorArmyGreen;
-      s_hi_text = GColorWhite;
-      s_accent = GColorArmyGreen;
-      s_status_fg = GColorBlack;
-      s_toast_bg = GColorBlack;
-      s_toast_text = GColorWhite;
-      break;
-    case 1: /* Dark */
-      s_bg = GColorBlack;
-      s_text = GColorWhite;
-      s_hi_bg = GColorDukeBlue;
-      s_hi_text = GColorWhite;
-      s_accent = GColorVividCerulean;
-      s_status_fg = GColorWhite;
-      s_toast_bg = GColorDarkGray;
-      s_toast_text = GColorWhite;
-      break;
-    case 2: /* Calm (light) */
-      s_bg = GColorLightGray;
-      s_text = GColorBlack;
-      s_hi_bg = GColorBlue;
-      s_hi_text = GColorWhite;
-      s_accent = GColorBlue;
-      s_status_fg = GColorBlack;
-      s_toast_bg = GColorBlack;
-      s_toast_text = GColorWhite;
-      break;
-    case 3: /* High contrast */
-    default:
-      s_bg = GColorWhite;
-      s_text = GColorBlack;
-      s_hi_bg = GColorBlack;
-      s_hi_text = GColorWhite;
-      s_accent = GColorBlack;
-      s_status_fg = GColorBlack;
-      s_toast_bg = GColorBlack;
-      s_toast_text = GColorWhite;
-      break;
-  }
+  /* One 64-color palette for all hardware; dithering on 1-bit. Dark only. */
+  s_bg = GColorBlack;
+  s_text = GColorWhite;
+  s_hi_bg = GColorDukeBlue;
+  s_hi_text = GColorWhite;
+  s_accent = GColorVividCerulean;
+  s_status_fg = GColorWhite;
+  s_toast_bg = GColorDarkGray;
+  s_toast_text = GColorWhite;
 }
 
 void theme_init(void) {
@@ -101,7 +63,7 @@ GColor theme_toast_text(void) { return s_toast_text; }
 GColor theme_menu_subtle_text(void) { return s_accent; }
 
 bool theme_icons_use_light_variant(void) {
-  return s_preset == 1;
+  return true;
 }
 
 void theme_add_button_colors(bool hi, GColor *out_disk, GColor *out_plus) {

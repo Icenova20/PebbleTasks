@@ -1,3 +1,4 @@
 build/
 pebble-watchface-agent/
 node_modules/
+**.env**

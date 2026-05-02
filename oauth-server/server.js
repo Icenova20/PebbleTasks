@@ -43,13 +43,6 @@ app.use(express.json({ limit: '24kb' }));
 
 const STATE_TTL_MS = 15 * 60 * 1000;
 const pendingStates = new Map();
-/** One-time OAuth result for /oauth/complete; deleted after first load. */
-const authPickups = new Map();
-/** Short id → full config for Pebble webview (avoids iOS pebblejs URL length limits). */
-const watchPickups = new Map();
-/** Device id (from PKJS) → last POST /oauth/watch-fragment payload, until pulled once (empty webview). */
-const deviceStash = new Map();
-const DEVICE_STASH_TTL_MS = 30 * 60 * 1000;
 
 function escapeHtmlAttr(s) {
   return String(s).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;');
@@ -81,21 +74,6 @@ function pruneStates() {
   for (const [k, v] of pendingStates) {
     if (now - v.at > STATE_TTL_MS) {
       pendingStates.delete(k);
-    }
-  }
-  for (const [k, v] of authPickups) {
-    if (now - v.at > STATE_TTL_MS) {
-      authPickups.delete(k);
-    }
-  }
-  for (const [k, v] of watchPickups) {
-    if (now - v.at > STATE_TTL_MS) {
-      watchPickups.delete(k);
-    }
-  }
-  for (const [k, v] of deviceStash) {
-    if (now - v.at > DEVICE_STASH_TTL_MS) {
-      deviceStash.delete(k);
     }
   }
 }
@@ -170,94 +148,12 @@ function redirectFragment(returnTo, payloadObj) {
   return `${returnTo}#${encodeURIComponent(tokenJson)}`;
 }
 
-const AUTH_PASTE_PREFIX = 'PEBBLETASKS1';
-
-function parsePastedAuthLineToPayload(line) {
-  const s = (line && String(line)) || '';
-  const t = s.replace(/^\s+|\s+$/g, '');
-  if (!t) {
-    return null;
-  }
-  if (t.indexOf(AUTH_PASTE_PREFIX) === 0) {
-    try {
-      return JSON.parse(Buffer.from(t.slice(AUTH_PASTE_PREFIX.length), 'base64').toString('utf8'));
-    } catch (e) {
-      return null;
-    }
-  }
-  try {
-    return JSON.parse(t);
-  } catch (a) {
-    /* */
-  }
-  try {
-    return JSON.parse(decodeURIComponent(t));
-  } catch (b) {
-    return null;
-  }
-}
-
-/**
- * One line for copy/paste into Pebble app settings (ASCII–safe, no newlines in payload).
- * PKJS and settings page both accept this and raw JSON.
- */
-function authPayloadToPasteLine(payloadObj) {
-  return AUTH_PASTE_PREFIX + Buffer.from(JSON.stringify(payloadObj), 'utf8').toString('base64');
-}
-
-function completeHtml(pastedLine) {
-  const lineEsc = (pastedLine || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/"/g, '&quot;');
-  return `<!DOCTYPE html>
-<html lang="en"><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
-<title>Google sign-in done — PebbleTasks</title>
-<style>
-html,body{background:#f7f7f7;color:#111;margin:0;padding:0;-webkit-text-size-adjust:100%}
-body{font-family:Helvetica,Arial,sans-serif;max-width:28rem;margin:1.5rem auto;padding:0 1rem 2rem}
-h1{font-size:1.1rem}
-textarea{width:100%;min-height:5.5rem;box-sizing:border-box;padding:.5rem;font:12px/1.3 Menlo,monospace;word-break:break-all;border:1px solid #aaa}
-.copy-btn{margin-top:.6rem;padding:.5rem 1rem;background:#222;color:#fff;border:0;border-radius:4px;font:15px Helvetica,Arial;width:100%;box-sizing:border-box;cursor:pointer;font-weight:600}
-ol{padding-left:1.2rem;margin:.6rem 0 1rem 0}
-li{margin:.4rem 0}
-.hint{color:#333;font-size:14px}
-</style></head>
-<body>
-<h1>Google sign-in complete</h1>
-<p class="hint">Ribble’s back-to-app link often does not hand tokens to the watch. Use <strong>copy and paste</strong> instead.</p>
-<ol>
-  <li>Tap <strong>Copy token</strong> below (or long-press the box → Select All → Copy).</li>
-  <li>Switch to the <strong>Rebble</strong> app, open <strong>Settings</strong> for PebbleTasks again (gear / app settings from the watch flow).</li>
-  <li>On the PebbleTasks settings page, find <strong>Paste auth token</strong>, tap the field, paste, then <strong>Save to Pebble</strong>.</li>
-</ol>
-<textarea id="t" readonly="readonly">${lineEsc}</textarea>
-<button type="button" class="copy-btn" id="copy">Copy token</button>
-<script>
-(function(){
-  var t = document.getElementById('t');
-  document.getElementById('copy').onclick = function() {
-    if (!t) return;
-    t.focus();
-    t.select();
-    try {
-      if (navigator.clipboard && navigator.clipboard.writeText) {
-        navigator.clipboard.writeText(t.value);
-        alert('Copied. Open Rebble → PebbleTasks settings → paste → Save to Pebble.');
-        return;
-      }
-    } catch (e) {}
-    try { document.execCommand('copy'); alert('Copied. Paste in Rebble on the PebbleTasks settings page.'); } catch (e2) { alert('Long-press the box, Select All, Copy.'); }
-  };
-})();
-</script>
-</body></html>`;
-}
-
 function settingsHtml(
   baseUrl,
   clientConfigured,
   initialMode,
   signedIn,
-  defaultOauthStart,
-  initialThemePreset
+  defaultOauthStart
 ) {
   const base = baseUrl.replace(/\/$/, '');
   const oauthInputValueEsc = escapeHtmlAttr(defaultOauthStart || base + '/oauth/start?return_to=' + encodeURIComponent('pebblejs://close#'));
@@ -266,20 +162,6 @@ function settingsHtml(
   const checkGoogle = modeGoogle ? ' checked' : '';
   const showLinked = !!signedIn;
   const showNeedToken = !signedIn && modeGoogle;
-  let t = 0;
-  if (typeof initialThemePreset === 'number' && !Number.isNaN(initialThemePreset)) {
-    t = initialThemePreset;
-  }
-  if (t < 0) {
-    t = 0;
-  }
-  if (t > 3) {
-    t = 3;
-  }
-  const checkT0 = t === 0 ? ' checked' : '';
-  const checkT1 = t === 1 ? ' checked' : '';
-  const checkT2 = t === 2 ? ' checked' : '';
-  const checkT3 = t === 3 ? ' checked' : '';
   return `<!DOCTYPE html>
 <html lang="en"><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
 <title>PebbleTasks</title>
@@ -308,7 +190,7 @@ body.mode-local #needTokenHint{display:none}
 <h1>PebbleTasks</h1>
 ${
   showLinked
-    ? '<p class="ok" id="signedStatus"><strong>Google is linked on this phone.</strong> The token is stored only in the Ribble app (not in this page). If you use Google mode, your tasks can sync; you will not see the token text again for security.</p>'
+    ? '<p class="ok" id="signedStatus"><strong>Google is linked on this phone.</strong> The token is stored only in the Pebble app (not in this page). If you use Google mode, your tasks can sync; you will not see the token text again for security.</p>'
     : ''
 }
 ${
@@ -326,14 +208,6 @@ ${
   <label><input type="radio" name="mode" value="local"${checkLocal}/> Stay local (offline, on phone only)</label>
   <label><input type="radio" name="mode" value="google"${checkGoogle}/> Use Google Tasks (sync with your Google account)</label>
 </div>
-<div style="margin-top:1.25rem;padding-top:1.25rem;border-top:1px solid #ddd">
-<h2 style="font-size:1rem;font-weight:600;margin:0 0 .5rem 0">Watch appearance</h2>
-<p class="hint" style="margin:0 0 .5rem 0">Color palette on the Pebble (color devices) or contrast style (black &amp; white).</p>
-<label><input type="radio" name="theme_preset" value="0"${checkT0}/> Classic (yellow + green)</label>
-<label><input type="radio" name="theme_preset" value="1"${checkT1}/> Dark</label>
-<label><input type="radio" name="theme_preset" value="2"${checkT2}/> Calm (light gray + blue)</label>
-<label><input type="radio" name="theme_preset" value="3"${checkT3}/> High contrast (white + black)</label>
-</div>
 <button type="button" id="save">Save &amp; return to Pebble</button>
 <p class="hint" style="margin:.9rem 0 0 0">
   <a href="/privacy" target="_blank" rel="noopener noreferrer">Privacy Policy</a>
@@ -341,8 +215,8 @@ ${
   <a href="/terms" target="_blank" rel="noopener noreferrer">Terms of Service</a>
 </p>
 <div id="googleBlock">
-<p class="warn" id="googleNote">Sign in with Google in your device’s browser, then return to Ribble.</p>
-<p class="hint" id="copyHint">1. Copy the link below. 2. Open your browser, paste and go. 3. When Google is done, switch back to Ribble.</p>
+<p class="warn" id="googleNote">Sign in with Google in your device’s browser, then return to Pebble.</p>
+<p class="hint" id="copyHint">1. Copy the link below. 2. Open your browser, paste and go. 3. When Google is done, switch back to Pebble.</p>
 <input type="text" id="oauthUrl" readonly="readonly" value="${oauthInputValueEsc}"/>
 <button type="button" class="copy-btn" id="copyOauth">Copy sign-in link</button>
 <div id="connectBlock">
@@ -352,7 +226,7 @@ ${
 </div>
 <div id="authPasteBlock" style="margin-top:1.5rem;padding-top:1.5rem;border-top:1px solid #ccc">
 <h2 style="font-size:1rem;font-weight:600;margin:0 0 .4rem 0">Paste Google auth token</h2>
-<p class="hint" id="authPasteHelp">If you finished sign-in in the browser, you will see a <strong>sign-in complete</strong> page with a <strong>token</strong> line. Copy that line, paste it in the field below, then save — this is the most reliable way on iPhone.</p>
+<p class="hint" id="authPasteHelp">If Google sign-in cannot return tokens to the watch (e.g. URL length limits), paste a saved <strong>PEBBLETASKS1…</strong> line or full JSON with <code>access_token</code> below, then save — tokens go only to your phone/watch via <code>pebblejs://close</code>; nothing is stored on this server.</p>
 <textarea id="authPaste" style="width:100%;min-height:4.5rem;box-sizing:border-box;padding:.4rem;font:12px/1.35 Menlo,monospace;border:1px solid #aaa;border-radius:2px" rows="3" placeholder="PEBBLETASKS1... or { &quot;mode&quot;:&quot;google&quot;,... } "></textarea>
 <p class="hint" id="noEchoHint" style="margin:.4rem 0 0 0">This field stays empty on each new visit. After you save, reopen settings from the watch: if the app has a token, a <strong>green “Google is linked”</strong> line appears at the top.</p>
 <button type="button" id="authPasteSave" style="margin-top:.5rem;padding:.5rem 1rem;background:#222;color:#fff;border:0;border-radius:4px;font:15px Helvetica,Arial;width:100%;box-sizing:border-box;cursor:pointer;font-weight:600">Save to Pebble</button>
@@ -424,12 +298,12 @@ ${
   var ua = navigator.userAgent || '';
   var isIOS = /iP(hone|ad|od)/.test(ua) || (typeof navigator !== 'undefined' && navigator.maxTouchPoints > 1 && /MacIntel/.test(navigator.platform));
   if (isIOS) {
-    if (noteEl) { noteEl.innerHTML = 'On <strong>iPhone or iPad</strong>, sign in with <strong>Safari</strong>, then copy a token and paste it here — the usual “back to Ribble with tokens in the link” does not work reliably.'; }
-    if (copyHint) { copyHint.innerHTML = '1. <strong>Copy sign-in link</strong> → 2. Open <strong>Safari</strong>, paste in the address bar, <strong>Go</strong> → 3. Finish Google sign-in → 4. On the <strong>Sign-in complete</strong> page, <strong>Copy token</strong> → 5. Back in <strong>Ribble</strong>, open this app’s <strong>Settings</strong> again → 6. Scroll to <strong>Paste Google auth token</strong> → paste → <strong>Save to Pebble</strong>.'; }
+    if (noteEl) { noteEl.innerHTML = 'On <strong>iPhone or iPad</strong>, sign in with <strong>Safari</strong>, then copy a token and paste it here — the usual “back to Pebble with tokens in the link” does not work reliably.'; }
+    if (copyHint) { copyHint.innerHTML = '1. <strong>Copy sign-in link</strong> → 2. Open <strong>Safari</strong>, paste in the address bar, <strong>Go</strong> → 3. Finish Google sign-in → 4. On the <strong>Sign-in complete</strong> page, <strong>Copy token</strong> → 5. Back in <strong>Pebble</strong>, open this app’s <strong>Settings</strong> again → 6. Scroll to <strong>Paste Google auth token</strong> → paste → <strong>Save to Pebble</strong>.'; }
     var connectBlock = document.getElementById('connectBlock');
     if (connectBlock) { connectBlock.className = 'is-hidden'; }
   } else {
-    if (copyHint) { copyHint.textContent = 'After Google, open the “sign-in complete” page in the browser, copy the token, then in Ribble open PebbleTasks settings again, paste under “Paste Google auth token”, and tap Save to Pebble (optional if the automatic return works for you).'; }
+    if (copyHint) { copyHint.textContent = 'After Google, open the “sign-in complete” page in the browser, copy the token, then in Pebble open PebbleTasks settings again, paste under “Paste Google auth token”, and tap Save to Pebble (optional if the automatic return works for you).'; }
   }
   function sync(){
     var g = false;
@@ -475,7 +349,7 @@ ${
       if (navigator.clipboard && navigator.clipboard.writeText) {
         navigator.clipboard.writeText(el.value);
         if (isIOS) {
-          alert('Copied. Open Safari, tap the address bar, paste, then Go. When Google is finished, return to the Ribble app (App Switcher).');
+          alert('Copied. Open Safari, tap the address bar, paste, then Go. When Google is finished, return to the Pebble app (App Switcher).');
         } else {
           alert('Link copied. Open Chrome or the browser, paste, complete sign-in, then return to the Pebble app.');
         }
@@ -494,16 +368,7 @@ ${
     var mode = 'local';
     for (var i=0;i<modes.length;i++){ if(modes[i].checked) mode = modes[i].value; }
     if(!rt){ alert('Missing return_to — open settings from the Pebble app.'); return; }
-    var themePreset = 0;
-    var tprs = document.getElementsByName('theme_preset');
-    for (var ti=0; ti<tprs.length; ti++) {
-      if (tprs[ti].checked) {
-        var tv = parseInt(tprs[ti].value, 10);
-        themePreset = (isNaN(tv) || tv < 0 || tv > 3) ? 0 : tv;
-        break;
-      }
-    }
-    var payload = { mode: mode, themePreset: themePreset };
+    var payload = { mode: mode };
     if (rt.indexOf('#') >= 0) {
       document.location = rt + encodeURIComponent(JSON.stringify(payload));
     } else {
@@ -525,41 +390,12 @@ ${
     authSave.onclick = function() {
       var t = (document.getElementById('authPaste') && document.getElementById('authPaste').value) || '';
       var o = parsePebbleAuthPaste(t);
-      if (!o || !o.access_token) { alert('Could not read a Google token. Paste the full line from the sign-in complete page (starts with PEBBLETASKS1), or full JSON with access_token.'); return; }
+      if (!o || !o.access_token) { alert('Could not read a Google token. Paste PEBBLETASKS1… (base64 JSON) or full JSON with access_token.'); return; }
       if (!rt) { alert('Missing return_to — open settings from the Pebble app.'); return; }
       if (!o.mode) { o.mode = 'google'; }
-      var goShort = function (id) {
-        var tiny = { w: id, mode: 'google' };
-        var enc = encodeURIComponent(JSON.stringify(tiny));
-        if (rt.indexOf('#') >= 0) {
-          document.location = rt + enc;
-        } else {
-          document.location = rt + '#' + enc;
-        }
-      };
-      var goLong = function () {
-        var enc = encodeURIComponent(JSON.stringify(o));
-        if (rt.indexOf('#') >= 0) { document.location = rt + enc; }
-        else { document.location = rt + '#' + enc; }
-      };
-      var x = new XMLHttpRequest();
-      x.open('POST', settingsBase + '/oauth/watch-fragment', true);
-      x.setRequestHeader('Content-Type', 'application/json');
-      x.onreadystatechange = function() {
-        if (x.readyState !== 4) { return; }
-        if (x.status === 200) {
-          try {
-            var j = JSON.parse(x.responseText);
-            if (j && j.id) { goShort(String(j.id)); return; }
-          } catch (e) {}
-        }
-        try { goLong(); } catch (e2) { alert('Could not send config to the watch. Check that the phone can reach: ' + settingsBase); }
-      };
-      try {
-        x.send(JSON.stringify({ payload: o, d: getQueryParam('d', '') || '' }));
-      } catch (e) {
-        goLong();
-      }
+      var enc = encodeURIComponent(JSON.stringify(o));
+      if (rt.indexOf('#') >= 0) { document.location = rt + enc; }
+      else { document.location = rt + '#' + enc; }
     };
   }
 })();
@@ -598,14 +434,6 @@ app.get('/', (req, res) => {
       ? req.query.return_to
       : 'pebblejs://close#';
   const defaultOauthStart = `${baseNorm}/oauth/start?return_to=${encodeURIComponent(returnToOauth)}`;
-  let initialTheme = 0;
-  const tq = req.query.theme_preset;
-  if (typeof tq === 'string' && tq.length) {
-    const tn = parseInt(tq, 10);
-    if (!Number.isNaN(tn) && tn >= 0 && tn <= 3) {
-      initialTheme = tn;
-    }
-  }
   res
     .set('Cache-Control', 'private, no-store, must-revalidate')
     .type('html')
@@ -615,8 +443,7 @@ app.get('/', (req, res) => {
         !!(cfg.clientId && cfg.clientSecret),
         initialMode,
         signedIn,
-        defaultOauthStart,
-        initialTheme
+        defaultOauthStart
       )
     );
 });
@@ -629,7 +456,7 @@ app.get('/privacy', (_req, res) => {
 <p>PebbleTasks is a hobby project. This page describes how data is handled.</p>
 <h2>What we collect</h2>
 <ul>
-  <li>Configuration choices you submit in the settings page (for example: local vs Google mode, theme).</li>
+  <li>Configuration choices you submit in the settings page (for example: local vs Google mode).</li>
   <li>OAuth tokens only when you choose Google mode.</li>
 </ul>
 <h2>How data is used</h2>
@@ -686,85 +513,6 @@ app.get('/terms', (_req, res) => {
 `
     )
   );
-});
-
-app.get('/oauth/complete', (req, res) => {
-  pruneStates();
-  const id = typeof req.query.id === 'string' ? req.query.id : '';
-  if (!id) {
-    res
-      .status(400)
-      .type('html')
-      .send(
-        '<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"/><title>PebbleTasks</title></head><body><p>Missing token id. Open sign-in from <a href="/">PebbleTasks</a> settings, then use Google in the browser.</p></body></html>'
-      );
-    return;
-  }
-  const entry = authPickups.get(id);
-  if (!entry || !entry.payload) {
-    res
-      .status(404)
-      .type('html')
-      .send(
-        '<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"/><title>Expired</title></head><body><p>This sign-in page has expired or was already used. Start <strong>Connect / Google</strong> again from PebbleTasks settings in the Ribble app.</p></body></html>'
-      );
-    return;
-  }
-  authPickups.delete(id);
-  const line = authPayloadToPasteLine(entry.payload);
-  res.type('html').send(completeHtml(line));
-});
-
-app.post('/oauth/watch-fragment', (req, res) => {
-  pruneStates();
-  const p = req.body && req.body.payload;
-  if (!p || typeof p !== 'object' || !p.access_token) {
-    res.status(400).json({ error: 'payload with access_token required' });
-    return;
-  }
-  if (!p.mode) {
-    p.mode = 'google';
-  }
-  const id = crypto.randomBytes(18).toString('hex');
-  watchPickups.set(id, { at: Date.now(), payload: p });
-  const d = req.body && req.body.d;
-  if (typeof d === 'string' && /^[0-9a-f]{32}$/i.test(d)) {
-    deviceStash.set(d.toLowerCase(), { at: Date.now(), payload: p });
-  }
-  res.json({ id });
-});
-
-app.get('/oauth/device-pull', (req, res) => {
-  pruneStates();
-  const did = typeof req.query.d === 'string' ? req.query.d : '';
-  if (!/^[0-9a-f]{32}$/i.test(did)) {
-    res.status(400).json({ error: 'd required' });
-    return;
-  }
-  const key = did.toLowerCase();
-  const entry = deviceStash.get(key);
-  if (!entry || !entry.payload) {
-    res.status(404).json({ error: 'none' });
-    return;
-  }
-  deviceStash.delete(key);
-  res.json(entry.payload);
-});
-
-app.get('/oauth/watch-claim', (req, res) => {
-  pruneStates();
-  const id = typeof req.query.id === 'string' ? req.query.id : '';
-  if (!id) {
-    res.status(400).json({ error: 'id required' });
-    return;
-  }
-  const entry = watchPickups.get(id);
-  if (!entry || !entry.payload) {
-    res.status(404).json({ error: 'not_found' });
-    return;
-  }
-  watchPickups.delete(id);
-  res.type('json').json(entry.payload);
 });
 
 app.get('/oauth/start', (req, res) => {
@@ -842,11 +590,9 @@ app.get('/oauth/callback', async (req, res) => {
     expires_in: t.expires_in,
     token_type: t.token_type,
   };
-  pruneStates();
-  const pickId = crypto.randomBytes(18).toString('hex');
-  authPickups.set(pickId, { at: Date.now(), payload });
-  const doneUrl = `${cfg.baseUrl}/oauth/complete?id=${encodeURIComponent(pickId)}`;
-  res.redirect(302, doneUrl);
+  /* Send tokens only in the pebblejs close URL — no server-side stash of user credentials. */
+  const appUrl = redirectFragment(meta.returnTo, payload);
+  res.redirect(302, appUrl);
 });
 
 app.post('/oauth/refresh', async (req, res) => {
