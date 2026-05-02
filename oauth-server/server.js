@@ -212,6 +212,16 @@ function legalPageHtml(escapedTitle, contentFilename) {
   });
 }
 
+/** After Google OAuth: one HTML response with a PEBBLETASKS1… paste line — no DB/cache of tokens. */
+function oauthCompleteHtml(pasteLine, appUrl, settingsHomeUrl) {
+  const tpl = readTemplate('oauth-complete.html');
+  return fillTemplate(tpl, {
+    PASTE_LINE: pasteLine,
+    APP_URL: escapeHtmlAttr(appUrl),
+    SETTINGS_HOME: escapeHtmlAttr(settingsHomeUrl),
+  });
+}
+
 app.get('/', (req, res) => {
   const cfg = env();
   // return_to, current_mode, signed_in are read in the page via getQueryParam (Rebble app-configuration-static pattern).
@@ -324,9 +334,15 @@ app.get('/oauth/callback', async (req, res) => {
     expires_in: t.expires_in,
     token_type: t.token_type,
   };
-  /* Send tokens only in the pebblejs close URL — no server-side stash of user credentials. */
+  const pasteLine =
+    'PEBBLETASKS1' +
+    Buffer.from(JSON.stringify(payload), 'utf8').toString('base64');
   const appUrl = redirectFragment(meta.returnTo, payload);
-  res.redirect(302, appUrl);
+  const settingsHomeUrl = `${cfg.baseUrl.replace(/\/$/, '')}/`;
+  res
+    .set('Cache-Control', 'private, no-store, must-revalidate')
+    .type('html')
+    .send(oauthCompleteHtml(pasteLine, appUrl, settingsHomeUrl));
 });
 
 app.post('/oauth/refresh', async (req, res) => {

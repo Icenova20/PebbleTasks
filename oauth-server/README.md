@@ -31,7 +31,7 @@ Use HTTPS in production; `BASE_PUBLIC_URL` must match the public URL Pebble’s 
 |--------|------|---------|
 | GET | `/` | Settings UI: mode (local / Google) + optional “Connect Google” |
 | GET | `/oauth/start` | Starts Google OAuth (`return_to` query required for Pebble callback) |
-| GET | `/oauth/callback` | Google redirects here; exchanges code; redirects to `return_to` with tokens in URL fragment |
+| GET | `/oauth/callback` | Google redirects here; exchanges code; shows **sign-in complete** page with a **PEBBLETASKS1…** line to paste into app settings (optional link to `pebblejs://close#…`) |
 | POST | `/oauth/refresh` | JSON body `{ "refresh_token": "..." }` → returns new `access_token` and `expires_in` (keeps client secret on server) |
 
 ## Pebble app configuration
@@ -45,4 +45,4 @@ Current production URL:
 
 - Never commit `.env` or log refresh tokens.
 - Use TLS for production OAuth redirects allowed by Google.
-- The server does **not** store user OAuth tokens or credentials; after `/oauth/callback` it redirects with tokens only in the `return_to` URL fragment (`pebblejs://close#…`), matching Rebble’s static config pattern.
+- The server does **not** persist user OAuth tokens; `/oauth/callback` renders a one-time HTML page with a paste line (and an optional `pebblejs://close#…` link). Tokens are not written to disk or a database.

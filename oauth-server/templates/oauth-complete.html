@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Google sign-in complete — PebbleTasks</title>
+<style>
+html,body{background:#fff;color:#111;margin:0;-webkit-text-size-adjust:100%}
+body{font-family:Helvetica,Arial,sans-serif;max-width:34rem;margin:1.5rem auto;padding:0 1rem;line-height:1.5}
+h1{font-size:1.15rem;margin:.2rem 0 .6rem 0}
+p,li{font-size:.95rem}
+.ok{background:#e8f5e9;border:1px solid #81c784;color:#1b5e20;padding:.55rem .65rem;border-radius:4px;font-size:14px;margin:0 0 1rem 0;line-height:1.35}
+code,.mono{font-family:Menlo,Monaco,Consolas,monospace;font-size:12px;word-break:break-all}
+label{display:block;font-weight:600;font-size:.9rem;margin:1rem 0 .35rem 0}
+textarea{width:100%;box-sizing:border-box;min-height:5rem;padding:.5rem;border:1px solid #aaa;border-radius:4px;font:12px/1.35 Menlo,Monaco,monospace}
+.copy-btn{margin-top:.5rem;padding:.55rem 1rem;background:#222;color:#fff;border:0;border-radius:4px;font:15px Helvetica,Arial;cursor:pointer;font-weight:600;width:100%;max-width:20rem}
+.secondary{display:inline-block;margin-top:1rem;font-size:.95rem}
+a{color:#0b57d0}
+.muted{color:#555;font-size:.85rem;margin-top:1.25rem}
+</style></head><body>
+<h1>Google sign-in complete</h1>
+<p class="ok">Copy the line below, then in the <strong>Pebble / Ribble</strong> app open <strong>PebbleTasks → Settings</strong>, scroll to <strong>Paste Google auth token</strong>, paste, and tap <strong>Save to Pebble</strong>.</p>
+<p class="muted">The browser often cannot hand long tokens back to the app automatically — pasting is the reliable path.</p>
+<label for="pasteLine">Copy this entire line</label>
+<textarea id="pasteLine" readonly="readonly">{{PASTE_LINE}}</textarea>
+<button type="button" class="copy-btn" id="copyBtn">Copy line</button>
+<p class="secondary"><a id="openApp" href="{{APP_URL}}">Try opening Pebble app</a> <span class="muted">(works on some devices; use paste if nothing happens)</span></p>
+<p class="muted"><a href="{{SETTINGS_HOME}}">Back to PebbleTasks settings</a></p>
+<script>
+(function () {
+  var t = document.getElementById('pasteLine');
+  var btn = document.getElementById('copyBtn');
+  function copy() {
+    if (!t) return;
+    t.focus();
+    t.select();
+    try {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(t.value);
+        alert('Copied. Switch to Pebble app → PebbleTasks Settings → paste → Save to Pebble.');
+        return;
+      }
+    } catch (e) {}
+    try {
+      if (document.execCommand('copy')) {
+        alert('Copied. Switch to Ribble → PebbleTasks Settings → paste → Save to Pebble.');
+        return;
+      }
+    } catch (e2) {}
+    alert('Select the text above, copy, then paste in PebbleTasks settings.');
+  }
+  if (btn) btn.onclick = copy;
+})();
+</script>
+</body></html>
