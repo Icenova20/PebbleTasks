@@ -89,38 +89,6 @@
     modes[j].addEventListener('change', sync);
   }
   sync();
-  function openInExternalBrowser(href) {
-    var a = document.createElement('a');
-    a.href = href;
-    a.setAttribute('target', '_blank');
-    a.setAttribute('rel', 'noopener noreferrer');
-    a.style.cssText = 'position:absolute;left:-9999px;';
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-  }
-  function tryAndroidExternal(href) {
-    if (!/Android/i.test(navigator.userAgent || '')) return;
-    try {
-      var intent =
-        'intent://#Intent;action=android.intent.action.VIEW' +
-        ';S.browser_fallback_url=' +
-        encodeURIComponent(href) +
-        ';end';
-      window.location.href = intent;
-    } catch (e) {}
-  }
-  var connectEl = document.getElementById('connect');
-  if (connectEl) {
-    connectEl.onclick = function () {
-      if (!oauthStartUrl) return;
-      openInExternalBrowser(oauthStartUrl);
-      try {
-        window.open(oauthStartUrl, '_blank', 'noopener,noreferrer');
-      } catch (e) {}
-      tryAndroidExternal(oauthStartUrl);
-    };
-  }
   document.getElementById('copyOauth').onclick = function () {
     var el = document.getElementById('oauthUrl');
     if (!el) return;
@@ -130,18 +98,22 @@
       if (navigator.clipboard && navigator.clipboard.writeText) {
         navigator.clipboard.writeText(el.value);
         alert(
-          'Link copied. Open your browser, paste in the address bar, complete Google sign-in, then return to the Pebble app.'
+          'Link copied. Open Safari, Chrome, or your phone’s default browser (not Pebble’s embedded browser), paste in the address bar, complete Google sign-in, then paste the PEBBLETASKS1 line here.'
         );
         return;
       }
     } catch (e) {}
     try {
       if (document.execCommand('copy')) {
-        alert('Copied. Open your browser, paste, then return to the Pebble app when done.');
+        alert(
+          'Copied. Open your native browser (not Pebble), paste the link, complete sign-in, then paste the PEBBLETASKS1 line here.'
+        );
         return;
       }
     } catch (e2) {}
-    alert('Select the link field, copy, then paste it in your browser’s address bar.');
+    alert(
+      'Select the link field, copy, then paste it in your native browser’s address bar (not inside Pebble).'
+    );
   };
   document.getElementById('save').onclick = function () {
     var mode = 'local';

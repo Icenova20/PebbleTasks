@@ -13,13 +13,13 @@ body.mode-google #googleBlock{display:block}
 #googleBlock p{margin:.5rem 0 0 0}
 #oauthUrl{width:100%;box-sizing:border-box;padding:.4rem;font-size:11px;margin-top:.4rem;word-break:break-all;border:1px solid #aaa}
 .copy-btn{margin-top:.4rem;padding:.5rem 1rem;background:#222;color:#fff;border:0;border-radius:4px;font-size:15px;font-weight:600;cursor:pointer;width:100%;max-width:20rem;box-sizing:border-box}
-#connectBlock{margin-top:1rem;padding-top:1rem;border-top:1px solid #ddd}
 .hint{color:#333;font-size:12px;line-height:1.4}
 .warn{color:#a50;font-size:.9rem}
 .ok{background:#e8f5e9;border:1px solid #81c784;color:#1b5e20;padding:.55rem .65rem;border-radius:4px;font-size:14px;margin:.6rem 0 1rem 0;line-height:1.35}
 .need-token{background:#fff8e1;border:1px solid #ffcc80;color:#5d4400;padding:.55rem .65rem;border-radius:4px;font-size:14px;margin:.6rem 0 1rem 0;line-height:1.35}
 body.mode-local #noEchoHint{display:none}
 body.mode-local #needTokenHint{display:none}
+#opensourceNote,#scopeNote{margin-top:.75rem}
 </style></head>
 <body class="mode-{{BODY_MODE}}" data-settings-base="{{SETTINGS_BASE}}">
 <h1>PebbleTasks</h1>
@@ -38,19 +38,17 @@ body.mode-local #needTokenHint{display:none}
   <a href="/terms" target="_blank" rel="noopener noreferrer">Terms of Service</a>
 </p>
 <div id="googleBlock">
-<p class="warn" id="googleNote">Sign in with Google in your phone’s browser, then return to the Pebble app — tokens are delivered back in the app link (nothing stored on this server).</p>
-<p class="hint" id="copyHint">1. <strong>Copy sign-in link</strong> → 2. Open your browser, paste in the address bar, go → 3. Finish Google sign-in → 4. Return to the Pebble app. If the watch doesn’t update, use <strong>Paste Google auth token</strong> below.</p>
+<p class="warn" id="oauthBrowserWarn">Google does not allow OAuth sign-in inside Pebble’s embedded browser (the WebView that loads this settings page). Copy the link below and open it in your phone’s <strong>native browser</strong> — Safari, Chrome, or your default browser — not inside Pebble.</p>
+<p class="hint" id="copyHint"><strong>Copy sign-in link</strong>, switch to your native browser, paste into the address bar, and complete Google sign-in. Afterward you’ll get a <strong>PEBBLETASKS1…</strong> line on the next page — paste that below.</p>
+<p class="hint" id="opensourceNote">This OAuth flow is fully open source; no user data is persisted by this server at any step. Repository: <a href="https://github.com/shan-srini/PebbleTasks" target="_blank" rel="noopener noreferrer">https://github.com/shan-srini/PebbleTasks</a></p>
+<p class="hint" id="scopeNote">The only scope you will be asked to grant for this app relates to <strong>Google Tasks</strong> — viewing and editing your tasks. No other permissions are requested.</p>
 <input type="text" id="oauthUrl" readonly="readonly" value="{{OAUTH_INPUT_VALUE}}"/>
 <button type="button" class="copy-btn" id="copyOauth">Copy sign-in link</button>
-<div id="connectBlock">
-<p class="hint" id="connectHint">Or open sign-in in your browser from here:</p>
-<button type="button" class="btnlink" id="connect" style="margin-top:.5rem;padding:.5rem 1rem">Open sign-in in browser</button>
-</div>
 </div>
 <div id="authPasteBlock" style="margin-top:1.5rem;padding-top:1.5rem;border-top:1px solid #ccc">
 <h2 style="font-size:1rem;font-weight:600;margin:0 0 .4rem 0">Paste Google auth token</h2>
-<p class="hint" id="authPasteHelp">If Google sign-in cannot return tokens to the watch (e.g. URL length limits), paste a saved <strong>PEBBLETASKS1…</strong> line or full JSON with <code>access_token</code> below, then save — tokens go only to your phone/watch via <code>pebblejs://close</code>; nothing is stored on this server.</p>
-<textarea id="authPaste" style="width:100%;min-height:4.5rem;box-sizing:border-box;padding:.4rem;font:12px/1.35 Menlo,monospace;border:1px solid #aaa;border-radius:2px" rows="3" placeholder="PEBBLETASKS1... or { &quot;mode&quot;:&quot;google&quot;,... } "></textarea>
+<p class="hint" id="authPasteHelp">Paste your <strong>PEBBLETASKS1…</strong> line here. Tokens only go to your phone/watch; nothing is stored on this server.</p>
+<textarea id="authPaste" style="width:100%;min-height:4.5rem;box-sizing:border-box;padding:.4rem;font:12px/1.35 Menlo,monospace;border:1px solid #aaa;border-radius:2px" rows="3" placeholder="PEBBLETASKS1..."></textarea>
 <p class="hint" id="noEchoHint" style="margin:.4rem 0 0 0">This field stays empty on each new visit. After you save, reopen settings from the watch: if the app has a token, a <strong>green “Google is linked”</strong> line appears at the top.</p>
 <button type="button" id="authPasteSave" style="margin-top:.5rem;padding:.5rem 1rem;background:#222;color:#fff;border:0;border-radius:4px;font:15px Helvetica,Arial;width:100%;box-sizing:border-box;cursor:pointer;font-weight:600">Save to Pebble</button>
 </div>

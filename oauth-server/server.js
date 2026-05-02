@@ -184,7 +184,7 @@ function settingsHtml(
     ? '<p class="ok" id="signedStatus"><strong>Google is linked on this phone.</strong> The token is stored only in the Pebble app (not in this page). If you use Google mode, your tasks can sync; you will not see the token text again for security.</p>'
     : '';
   const needTokenHtml = showNeedToken
-    ? '<p class="need-token" id="needTokenHint">No Google token on the phone yet — use <strong>Copy sign-in link</strong> (or open sign-in below), or paste JSON under <strong>Paste Google auth token</strong>, then <strong>Save to Pebble</strong>.</p>'
+    ? '<p class="need-token" id="needTokenHint">No Google token on the phone yet — open the sign-in link in your <strong>native browser</strong>, then paste your <strong>PEBBLETASKS1…</strong> line under <strong>Paste Google auth token</strong> and tap <strong>Save to Pebble</strong>.</p>'
     : '';
   const missingCredsHtml = !clientConfigured
     ? '<p class="warn">Server missing GOOGLE_CLIENT_ID / GOOGLE_CLIENT_SECRET. Add them to <code>.env</code> and restart.</p>'
