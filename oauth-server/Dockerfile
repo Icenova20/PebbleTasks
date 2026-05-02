@@ -7,6 +7,8 @@ WORKDIR /app
 COPY package.json package-lock.json ./
 RUN npm ci --omit=dev && npm cache clean --force
 
+COPY templates ./templates/
+COPY static ./static/
 COPY server.js ./
 
 # Non-root user provided by the official image

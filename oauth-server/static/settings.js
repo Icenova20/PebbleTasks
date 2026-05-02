@@ -1,0 +1,211 @@
+(function () {
+  function getQueryParam(variable, defaultValue) {
+    var query = location.search ? location.search.substring(1) : '';
+    var vars = query ? query.split('&') : [];
+    for (var i = 0; i < vars.length; i++) {
+      var part = vars[i];
+      var eq = part.indexOf('=');
+      var key = eq >= 0 ? part.slice(0, eq) : part;
+      var keyMatch = false;
+      try {
+        keyMatch = decodeURIComponent(key) === variable;
+      } catch (e) {
+        keyMatch = key === variable;
+      }
+      if (!keyMatch) {
+        continue;
+      }
+      if (eq < 0) {
+        return '';
+      }
+      var rawV = part.slice(eq + 1).split('+').join(' ');
+      try {
+        return decodeURIComponent(rawV);
+      } catch (e2) {
+        return rawV;
+      }
+    }
+    return defaultValue !== undefined && defaultValue !== null ? defaultValue : false;
+  }
+  var settingsBase = document.body.getAttribute('data-settings-base') || '';
+  var rt = getQueryParam('return_to', 'pebblejs://close#');
+  if (typeof rt !== 'string' || !rt) {
+    rt = 'pebblejs://close#';
+  }
+  var oauthStartUrl = settingsBase + '/oauth/start?return_to=' + encodeURIComponent(rt);
+  var oauthIn = document.getElementById('oauthUrl');
+  if (oauthIn) {
+    oauthIn.value = oauthStartUrl;
+  }
+  var modes = document.getElementsByName('mode');
+  var curMode = getQueryParam('current_mode', 'local');
+  if (curMode === 'google' || curMode === 'local') {
+    for (var m = 0; m < modes.length; m++) {
+      if (modes[m].value === curMode) {
+        modes[m].checked = true;
+      }
+    }
+  }
+  if (document.body) {
+    if (curMode === 'google') {
+      document.body.className = 'mode-google';
+    } else if (curMode === 'local') {
+      document.body.className = 'mode-local';
+    }
+  }
+  (function () {
+    var s = getQueryParam('signed_in', '0');
+    var linked = s === '1' || s === 'true';
+    var st0 = document.getElementById('signedStatus');
+    var nd0 = document.getElementById('needTokenHint');
+    if (linked) {
+      if (st0) {
+        st0.style.display = '';
+      }
+      if (nd0) {
+        nd0.style.display = 'none';
+      }
+    } else {
+      if (st0) {
+        st0.style.display = 'none';
+      }
+      if (nd0) {
+        nd0.style.display = '';
+      }
+    }
+  })();
+  function sync() {
+    var g = false;
+    for (var i = 0; i < modes.length; i++) {
+      if (modes[i].checked && modes[i].value === 'google') {
+        g = true;
+      }
+    }
+    if (document.body) {
+      document.body.className = g ? 'mode-google' : 'mode-local';
+    }
+  }
+  for (var j = 0; j < modes.length; j++) {
+    modes[j].addEventListener('change', sync);
+  }
+  sync();
+  function openInExternalBrowser(href) {
+    var a = document.createElement('a');
+    a.href = href;
+    a.setAttribute('target', '_blank');
+    a.setAttribute('rel', 'noopener noreferrer');
+    a.style.cssText = 'position:absolute;left:-9999px;';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+  }
+  function tryAndroidExternal(href) {
+    if (!/Android/i.test(navigator.userAgent || '')) return;
+    try {
+      var intent =
+        'intent://#Intent;action=android.intent.action.VIEW' +
+        ';S.browser_fallback_url=' +
+        encodeURIComponent(href) +
+        ';end';
+      window.location.href = intent;
+    } catch (e) {}
+  }
+  var connectEl = document.getElementById('connect');
+  if (connectEl) {
+    connectEl.onclick = function () {
+      if (!oauthStartUrl) return;
+      openInExternalBrowser(oauthStartUrl);
+      try {
+        window.open(oauthStartUrl, '_blank', 'noopener,noreferrer');
+      } catch (e) {}
+      tryAndroidExternal(oauthStartUrl);
+    };
+  }
+  document.getElementById('copyOauth').onclick = function () {
+    var el = document.getElementById('oauthUrl');
+    if (!el) return;
+    el.focus();
+    el.select();
+    try {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(el.value);
+        alert(
+          'Link copied. Open your browser, paste in the address bar, complete Google sign-in, then return to the Pebble app.'
+        );
+        return;
+      }
+    } catch (e) {}
+    try {
+      if (document.execCommand('copy')) {
+        alert('Copied. Open your browser, paste, then return to the Pebble app when done.');
+        return;
+      }
+    } catch (e2) {}
+    alert('Select the link field, copy, then paste it in your browser’s address bar.');
+  };
+  document.getElementById('save').onclick = function () {
+    var mode = 'local';
+    for (var i = 0; i < modes.length; i++) {
+      if (modes[i].checked) mode = modes[i].value;
+    }
+    if (!rt) {
+      alert('Missing return_to — open settings from the Pebble app.');
+      return;
+    }
+    var payload = { mode: mode };
+    if (rt.indexOf('#') >= 0) {
+      document.location = rt + encodeURIComponent(JSON.stringify(payload));
+    } else {
+      document.location = rt + '#' + encodeURIComponent(JSON.stringify(payload));
+    }
+  };
+  function parsePebbleAuthPaste(s) {
+    s = (s || '').replace(/^\s+|\s+$/g, '');
+    if (!s) {
+      return null;
+    }
+    if (s.indexOf('PEBBLETASKS1') === 0) {
+      try {
+        return JSON.parse(atob(s.slice('PEBBLETASKS1'.length)));
+      } catch (e) {
+        return null;
+      }
+    }
+    try {
+      return JSON.parse(s);
+    } catch (a) {}
+    try {
+      return JSON.parse(decodeURIComponent(s));
+    } catch (b) {}
+    return null;
+  }
+  var authSave = document.getElementById('authPasteSave');
+  if (authSave) {
+    authSave.onclick = function () {
+      var t =
+        (document.getElementById('authPaste') &&
+          document.getElementById('authPaste').value) ||
+        '';
+      var o = parsePebbleAuthPaste(t);
+      if (!o || !o.access_token) {
+        alert(
+          'Could not read a Google token. Paste PEBBLETASKS1… (base64 JSON) or full JSON with access_token.'
+        );
+        return;
+      }
+      if (!rt) {
+        alert('Missing return_to — open settings from the Pebble app.');
+        return;
+      }
+      if (!o.mode) {
+        o.mode = 'google';
+      }
+      var enc = encodeURIComponent(JSON.stringify(o));
+      if (rt.indexOf('#') >= 0) {
+        document.location = rt + enc;
+      } else {
+        document.location = rt + '#' + enc;
+      }
+    };
+  }
+})();

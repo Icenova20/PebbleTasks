@@ -3,6 +3,7 @@
  * Configure via environment (see .env.example).
  * Loads oauth-server/.env when present (not automatic in Node without dotenv).
  */
+const fs = require('fs');
 const path = require('path');
 require('dotenv').config({ path: path.join(__dirname, '.env') });
 
@@ -40,6 +41,21 @@ app.use((req, res, next) => {
   next();
 });
 app.use(express.json({ limit: '24kb' }));
+app.use('/static', express.static(path.join(__dirname, 'static')));
+
+const TEMPLATES_DIR = path.join(__dirname, 'templates');
+
+function readTemplate(name) {
+  return fs.readFileSync(path.join(TEMPLATES_DIR, name), 'utf8');
+}
+
+function fillTemplate(template, vars) {
+  let out = template;
+  for (const [key, value] of Object.entries(vars)) {
+    out = out.split(`{{${key}}}`).join(value);
+  }
+  return out;
+}
 
 const STATE_TTL_MS = 15 * 60 * 1000;
 const pendingStates = new Map();
@@ -156,271 +172,44 @@ function settingsHtml(
   defaultOauthStart
 ) {
   const base = baseUrl.replace(/\/$/, '');
-  const oauthInputValueEsc = escapeHtmlAttr(defaultOauthStart || base + '/oauth/start?return_to=' + encodeURIComponent('pebblejs://close#'));
+  const oauthInputValueEsc = escapeHtmlAttr(
+    defaultOauthStart || base + '/oauth/start?return_to=' + encodeURIComponent('pebblejs://close#')
+  );
   const modeGoogle = initialMode === 'google';
   const checkLocal = modeGoogle ? '' : ' checked';
   const checkGoogle = modeGoogle ? ' checked' : '';
   const showLinked = !!signedIn;
   const showNeedToken = !signedIn && modeGoogle;
-  return `<!DOCTYPE html>
-<html lang="en"><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
-<title>PebbleTasks</title>
-<style>
-html,body{background-color:#fff;color:#111;margin:0;-webkit-text-size-adjust:100%}
-body{font-family:Helvetica,Arial,sans-serif;max-width:28rem;margin:1.5rem auto;padding:0 1rem}
-h1{font-size:1.1rem}
-label{display:block;margin:.75rem 0}
-button{margin-top:1rem;padding:.5rem 1rem;background:#eee;color:#111;border:1px solid #ccc;border-radius:2px;font-size:inherit;cursor:pointer;vertical-align:middle}
-button.secondary{margin-top:.5rem;padding:.35rem .75rem;font-size:13px}
-body.mode-local #googleBlock{display:none}
-body.mode-google #googleBlock{display:block}
-#googleBlock p{margin:.5rem 0 0 0}
-#oauthUrl{width:100%;box-sizing:border-box;padding:.4rem;font-size:11px;margin-top:.4rem;word-break:break-all;border:1px solid #aaa}
-.copy-btn{margin-top:.4rem;padding:.5rem 1rem;background:#222;color:#fff;border:0;border-radius:4px;font-size:15px;font-weight:600;cursor:pointer;width:100%;max-width:20rem;box-sizing:border-box}
-#connectBlock{margin-top:1rem;padding-top:1rem;border-top:1px solid #ddd}
-#connectBlock.is-hidden,#connectBlock.is-hidden #connectHint{display:none}
-.hint{color:#333;font-size:12px;line-height:1.4}
-.warn{color:#a50;font-size:.9rem}
-.ok{background:#e8f5e9;border:1px solid #81c784;color:#1b5e20;padding:.55rem .65rem;border-radius:4px;font-size:14px;margin:.6rem 0 1rem 0;line-height:1.35}
-.need-token{background:#fff8e1;border:1px solid #ffcc80;color:#5d4400;padding:.55rem .65rem;border-radius:4px;font-size:14px;margin:.6rem 0 1rem 0;line-height:1.35}
-body.mode-local #noEchoHint{display:none}
-body.mode-local #needTokenHint{display:none}
-</style></head>
-<body class="mode-${initialMode === 'google' ? 'google' : 'local'}">
-<h1>PebbleTasks</h1>
-${
-  showLinked
+  const signedHtml = showLinked
     ? '<p class="ok" id="signedStatus"><strong>Google is linked on this phone.</strong> The token is stored only in the Pebble app (not in this page). If you use Google mode, your tasks can sync; you will not see the token text again for security.</p>'
-    : ''
-}
-${
-  showNeedToken
-    ? '<p class="need-token" id="needTokenHint">No sign-in token on the phone yet — use <strong>Copy sign-in link</strong> or paste a token from the “sign-in complete” page, then <strong>Save to Pebble</strong>.</p>'
-    : ''
-}
-<p>Choose where your tasks are stored on the phone.</p>
-${
-  !clientConfigured
+    : '';
+  const needTokenHtml = showNeedToken
+    ? '<p class="need-token" id="needTokenHint">No Google token on the phone yet — use <strong>Copy sign-in link</strong> (or open sign-in below), or paste JSON under <strong>Paste Google auth token</strong>, then <strong>Save to Pebble</strong>.</p>'
+    : '';
+  const missingCredsHtml = !clientConfigured
     ? '<p class="warn">Server missing GOOGLE_CLIENT_ID / GOOGLE_CLIENT_SECRET. Add them to <code>.env</code> and restart.</p>'
-    : ''
-}
-<div>
-  <label><input type="radio" name="mode" value="local"${checkLocal}/> Stay local (offline, on phone only)</label>
-  <label><input type="radio" name="mode" value="google"${checkGoogle}/> Use Google Tasks (sync with your Google account)</label>
-</div>
-<button type="button" id="save">Save &amp; return to Pebble</button>
-<p class="hint" style="margin:.9rem 0 0 0">
-  <a href="/privacy" target="_blank" rel="noopener noreferrer">Privacy Policy</a>
-  &nbsp;|&nbsp;
-  <a href="/terms" target="_blank" rel="noopener noreferrer">Terms of Service</a>
-</p>
-<div id="googleBlock">
-<p class="warn" id="googleNote">Sign in with Google in your device’s browser, then return to Pebble.</p>
-<p class="hint" id="copyHint">1. Copy the link below. 2. Open your browser, paste and go. 3. When Google is done, switch back to Pebble.</p>
-<input type="text" id="oauthUrl" readonly="readonly" value="${oauthInputValueEsc}"/>
-<button type="button" class="copy-btn" id="copyOauth">Copy sign-in link</button>
-<div id="connectBlock">
-<p class="hint" id="connectHint">Or try (often works on Android, rarely on iPhone in-app):</p>
-<button type="button" class="btnlink" id="connect" style="margin-top:.5rem;padding:.5rem 1rem">Open sign-in in browser (try)</button>
-</div>
-</div>
-<div id="authPasteBlock" style="margin-top:1.5rem;padding-top:1.5rem;border-top:1px solid #ccc">
-<h2 style="font-size:1rem;font-weight:600;margin:0 0 .4rem 0">Paste Google auth token</h2>
-<p class="hint" id="authPasteHelp">If Google sign-in cannot return tokens to the watch (e.g. URL length limits), paste a saved <strong>PEBBLETASKS1…</strong> line or full JSON with <code>access_token</code> below, then save — tokens go only to your phone/watch via <code>pebblejs://close</code>; nothing is stored on this server.</p>
-<textarea id="authPaste" style="width:100%;min-height:4.5rem;box-sizing:border-box;padding:.4rem;font:12px/1.35 Menlo,monospace;border:1px solid #aaa;border-radius:2px" rows="3" placeholder="PEBBLETASKS1... or { &quot;mode&quot;:&quot;google&quot;,... } "></textarea>
-<p class="hint" id="noEchoHint" style="margin:.4rem 0 0 0">This field stays empty on each new visit. After you save, reopen settings from the watch: if the app has a token, a <strong>green “Google is linked”</strong> line appears at the top.</p>
-<button type="button" id="authPasteSave" style="margin-top:.5rem;padding:.5rem 1rem;background:#222;color:#fff;border:0;border-radius:4px;font:15px Helvetica,Arial;width:100%;box-sizing:border-box;cursor:pointer;font-weight:600">Save to Pebble</button>
-</div>
-<script>
-(function(){
-  function getQueryParam(variable, defaultValue) {
-    var query = location.search ? location.search.substring(1) : '';
-    var vars = query ? query.split('&') : [];
-    for (var i = 0; i < vars.length; i++) {
-      var part = vars[i];
-      var eq = part.indexOf('=');
-      var key = eq >= 0 ? part.slice(0, eq) : part;
-      var keyMatch = false;
-      try {
-        keyMatch = decodeURIComponent(key) === variable;
-      } catch (e) {
-        keyMatch = key === variable;
-      }
-      if (!keyMatch) {
-        continue;
-      }
-      if (eq < 0) {
-        return '';
-      }
-      var rawV = part.slice(eq + 1).split('+').join(' ');
-      try {
-        return decodeURIComponent(rawV);
-      } catch (e2) {
-        return rawV;
-      }
-    }
-    return defaultValue !== undefined && defaultValue !== null ? defaultValue : false;
-  }
-  var settingsBase = ${JSON.stringify(base)};
-  var rt = getQueryParam('return_to', 'pebblejs://close#');
-  if (typeof rt !== 'string' || !rt) {
-    rt = 'pebblejs://close#';
-  }
-  var oauthStartUrl = settingsBase + '/oauth/start?return_to=' + encodeURIComponent(rt);
-  var oauthIn = document.getElementById('oauthUrl');
-  if (oauthIn) { oauthIn.value = oauthStartUrl; }
-  var modes = document.getElementsByName('mode');
-  var curMode = getQueryParam('current_mode', 'local');
-  if (curMode === 'google' || curMode === 'local') {
-    for (var m = 0; m < modes.length; m++) {
-      if (modes[m].value === curMode) { modes[m].checked = true; }
-    }
-  }
-  if (document.body) {
-    if (curMode === 'google') { document.body.className = 'mode-google'; }
-    else if (curMode === 'local') { document.body.className = 'mode-local'; }
-  }
-  (function () {
-    var s = getQueryParam('signed_in', '0');
-    var linked = s === '1' || s === 'true';
-    var st0 = document.getElementById('signedStatus');
-    var nd0 = document.getElementById('needTokenHint');
-    if (linked) {
-      if (st0) { st0.style.display = ''; }
-      if (nd0) { nd0.style.display = 'none'; }
-    } else {
-      if (st0) { st0.style.display = 'none'; }
-      if (nd0) { nd0.style.display = ''; }
-    }
-  })();
-  var noteEl = document.getElementById('googleNote');
-  var copyHint = document.getElementById('copyHint');
-  var ua = navigator.userAgent || '';
-  var isIOS = /iP(hone|ad|od)/.test(ua) || (typeof navigator !== 'undefined' && navigator.maxTouchPoints > 1 && /MacIntel/.test(navigator.platform));
-  if (isIOS) {
-    if (noteEl) { noteEl.innerHTML = 'On <strong>iPhone or iPad</strong>, sign in with <strong>Safari</strong>, then copy a token and paste it here — the usual “back to Pebble with tokens in the link” does not work reliably.'; }
-    if (copyHint) { copyHint.innerHTML = '1. <strong>Copy sign-in link</strong> → 2. Open <strong>Safari</strong>, paste in the address bar, <strong>Go</strong> → 3. Finish Google sign-in → 4. On the <strong>Sign-in complete</strong> page, <strong>Copy token</strong> → 5. Back in <strong>Pebble</strong>, open this app’s <strong>Settings</strong> again → 6. Scroll to <strong>Paste Google auth token</strong> → paste → <strong>Save to Pebble</strong>.'; }
-    var connectBlock = document.getElementById('connectBlock');
-    if (connectBlock) { connectBlock.className = 'is-hidden'; }
-  } else {
-    if (copyHint) { copyHint.textContent = 'After Google, open the “sign-in complete” page in the browser, copy the token, then in Pebble open PebbleTasks settings again, paste under “Paste Google auth token”, and tap Save to Pebble (optional if the automatic return works for you).'; }
-  }
-  function sync(){
-    var g = false;
-    for (var i=0;i<modes.length;i++){ if(modes[i].checked && modes[i].value==='google') g=true; }
-    if (document.body) { document.body.className = g ? 'mode-google' : 'mode-local'; }
-  }
-  for (var j=0;j<modes.length;j++){ modes[j].addEventListener('change', sync); }
-  sync();
-  function openInExternalBrowser(href) {
-    var a = document.createElement('a');
-    a.href = href;
-    a.setAttribute('target', '_blank');
-    a.setAttribute('rel', 'noopener noreferrer');
-    a.style.cssText = 'position:absolute;left:-9999px;';
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-  }
-  function tryAndroidExternal(href) {
-    if (!/Android/i.test(navigator.userAgent || '')) return;
-    try {
-      var intent = 'intent://#Intent;action=android.intent.action.VIEW' +
-        ';S.browser_fallback_url=' + encodeURIComponent(href) +
-        ';end';
-      window.location.href = intent;
-    } catch (e) {}
-  }
-  var connectEl = document.getElementById('connect');
-  if (connectEl) {
-  connectEl.onclick = function() {
-    if (!oauthStartUrl) return;
-    openInExternalBrowser(oauthStartUrl);
-    try { window.open(oauthStartUrl, '_blank', 'noopener,noreferrer'); } catch (e) {}
-    tryAndroidExternal(oauthStartUrl);
-  };
-  }
-  document.getElementById('copyOauth').onclick = function() {
-    var el = document.getElementById('oauthUrl');
-    if (!el) return;
-    el.focus();
-    el.select();
-    try {
-      if (navigator.clipboard && navigator.clipboard.writeText) {
-        navigator.clipboard.writeText(el.value);
-        if (isIOS) {
-          alert('Copied. Open Safari, tap the address bar, paste, then Go. When Google is finished, return to the Pebble app (App Switcher).');
-        } else {
-          alert('Link copied. Open Chrome or the browser, paste, complete sign-in, then return to the Pebble app.');
-        }
-        return;
-      }
-    } catch (e) {}
-    try {
-      if (document.execCommand('copy')) {
-        alert('Copied. Open your browser, paste, then return to the Pebble app when done.');
-        return;
-      }
-    } catch (e2) {}
-    alert('Long-press the field, tap Select All, then Copy. Paste in Safari’s address bar.');
-  };
-  document.getElementById('save').onclick = function(){
-    var mode = 'local';
-    for (var i=0;i<modes.length;i++){ if(modes[i].checked) mode = modes[i].value; }
-    if(!rt){ alert('Missing return_to — open settings from the Pebble app.'); return; }
-    var payload = { mode: mode };
-    if (rt.indexOf('#') >= 0) {
-      document.location = rt + encodeURIComponent(JSON.stringify(payload));
-    } else {
-      document.location = rt + '#' + encodeURIComponent(JSON.stringify(payload));
-    }
-  };
-  function parsePebbleAuthPaste(s) {
-    s = (s || '').replace(/^\\s+|\\s+$/g, '');
-    if (!s) { return null; }
-    if (s.indexOf('PEBBLETASKS1') === 0) {
-      try { return JSON.parse(atob(s.slice('PEBBLETASKS1'.length))); } catch (e) { return null; }
-    }
-    try { return JSON.parse(s); } catch (a) {}
-    try { return JSON.parse(decodeURIComponent(s)); } catch (b) {}
-    return null;
-  }
-  var authSave = document.getElementById('authPasteSave');
-  if (authSave) {
-    authSave.onclick = function() {
-      var t = (document.getElementById('authPaste') && document.getElementById('authPaste').value) || '';
-      var o = parsePebbleAuthPaste(t);
-      if (!o || !o.access_token) { alert('Could not read a Google token. Paste PEBBLETASKS1… (base64 JSON) or full JSON with access_token.'); return; }
-      if (!rt) { alert('Missing return_to — open settings from the Pebble app.'); return; }
-      if (!o.mode) { o.mode = 'google'; }
-      var enc = encodeURIComponent(JSON.stringify(o));
-      if (rt.indexOf('#') >= 0) { document.location = rt + enc; }
-      else { document.location = rt + '#' + enc; }
-    };
-  }
-})();
-</script>
-</body></html>`;
+    : '';
+  const tpl = readTemplate('settings.html');
+  return fillTemplate(tpl, {
+    BODY_MODE: initialMode === 'google' ? 'google' : 'local',
+    SETTINGS_BASE: escapeHtmlAttr(base),
+    SIGNED_STATUS_HTML: signedHtml,
+    NEED_TOKEN_HTML: needTokenHtml,
+    MISSING_CREDS_HTML: missingCredsHtml,
+    CHECK_LOCAL: checkLocal,
+    CHECK_GOOGLE: checkGoogle,
+    OAUTH_INPUT_VALUE: oauthInputValueEsc,
+  });
 }
 
-function legalPageHtml(title, bodyHtml) {
-  return `<!DOCTYPE html>
-<html lang="en"><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
-<title>${escapeHtml(title)} — PebbleTasks</title>
-<style>
-html,body{background:#fff;color:#111;margin:0;-webkit-text-size-adjust:100%}
-body{font-family:Helvetica,Arial,sans-serif;max-width:34rem;margin:1.5rem auto;padding:0 1rem;line-height:1.5}
-h1{font-size:1.15rem;margin:.2rem 0 .8rem 0}
-h2{font-size:1rem;margin:1rem 0 .4rem 0}
-p,li{font-size:.95rem}
-a{color:#0b57d0}
-.muted{color:#555;font-size:.85rem}
-</style></head><body>
-<h1>${escapeHtml(title)}</h1>
-${bodyHtml}
-<p class="muted">Last updated: ${new Date().toISOString().slice(0, 10)}</p>
-<p><a href="/">Back to PebbleTasks settings</a></p>
-</body></html>`;
+function legalPageHtml(escapedTitle, contentFilename) {
+  const shell = readTemplate('legal-shell.html');
+  const content = readTemplate(contentFilename);
+  return fillTemplate(shell, {
+    TITLE: escapedTitle,
+    CONTENT: content,
+    DATE: new Date().toISOString().slice(0, 10),
+  });
 }
 
 app.get('/', (req, res) => {
@@ -450,68 +239,13 @@ app.get('/', (req, res) => {
 
 app.get('/privacy', (_req, res) => {
   res.type('html').send(
-    legalPageHtml(
-      'Privacy Policy',
-      `
-<p>PebbleTasks is a hobby project. This page describes how data is handled.</p>
-<h2>What we collect</h2>
-<ul>
-  <li>Configuration choices you submit in the settings page (for example: local vs Google mode).</li>
-  <li>OAuth tokens only when you choose Google mode.</li>
-</ul>
-<h2>How data is used</h2>
-<ul>
-  <li>To enable task syncing with Google Tasks when you opt in.</li>
-  <li>To return settings and tokens back to the Pebble companion flow.</li>
-</ul>
-<h2>Data storage</h2>
-<ul>
-  <li>Primary token storage is intended to be on the phone companion app.</li>
-  <li>This server may temporarily hold OAuth payloads during sign-in handoff.</li>
-</ul>
-<h2>Third-party services</h2>
-<p>PebbleTasks depends on third-party services and software (including Google APIs, Rebble/Pebble companion behavior, hosting, DNS, and network providers). Their outages, policy changes, or platform behavior can affect functionality.</p>
-<h2>Security limitations</h2>
-<p>Reasonable efforts may be used, but no method of transmission or storage is 100% secure. Use at your own risk.</p>
-<h2>Google account permissions</h2>
-<p>If you connect Google, you can revoke PebbleTasks access at any time from your Google account permissions page.</p>
-<h2>Your data ownership</h2>
-<p>You retain ownership of your task data. PebbleTasks does not claim ownership of your content.</p>
-<h2>No guarantees</h2>
-<p>This is an as-is hobby project. No guarantees are made about availability, security, fitness for any purpose, or data retention.</p>
-<h2>Policy changes</h2>
-<p>This policy may be updated at any time. Continued use after updates means you accept the revised policy.</p>
-`
-    )
+    legalPageHtml(escapeHtml('Privacy Policy'), 'privacy-content.html')
   );
 });
 
 app.get('/terms', (_req, res) => {
   res.type('html').send(
-    legalPageHtml(
-      'Terms of Service',
-      `
-<p>By using PebbleTasks, you agree to these terms.</p>
-<h2>Hobby project</h2>
-<p>PebbleTasks is provided as a personal hobby project and may change or stop at any time without notice.</p>
-<h2>No liability</h2>
-<p>To the maximum extent permitted by law, the developer disclaims all liability for any loss, damage, claim, or consequence arising from use, misuse, inability to use, or reliance on PebbleTasks in any manner whatsoever.</p>
-<h2>No warranties</h2>
-<p>The service is provided “as is” and “as available”, with no express or implied warranties.</p>
-<h2>No affiliation</h2>
-<p>PebbleTasks is an independent project and is not affiliated with, endorsed by, or sponsored by Google, Pebble, or Rebble. All trademarks belong to their respective owners.</p>
-<h2>Third-party dependency</h2>
-<p>Features may rely on third-party platforms, APIs, and network connectivity. These dependencies may fail, change, or be withdrawn at any time.</p>
-<h2>No support or service levels</h2>
-<p>No service-level agreement, uptime guarantee, update schedule, or support obligation is provided.</p>
-<h2>Your responsibility</h2>
-<p>You are responsible for how you use the app, your account permissions, and your own backups.</p>
-<h2>Changes to terms</h2>
-<p>These terms may be updated at any time. Continued use after updates constitutes acceptance of the revised terms.</p>
-<h2>Severability</h2>
-<p>If any part of these terms is found unenforceable, the remaining terms continue in full effect.</p>
-`
-    )
+    legalPageHtml(escapeHtml('Terms of Service'), 'terms-content.html')
   );
 });
 
