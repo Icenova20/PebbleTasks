@@ -142,6 +142,19 @@ function tryParseConfigFragment(s) {
   }
 }
 
+/** Some Pebble/iOS builds pass the full close URL; only the part after # is JSON. */
+function normalizeWebviewConfigResponse(raw) {
+  var s = typeof raw === 'string' ? raw : String(raw);
+  if (s.length === 0) {
+    return s;
+  }
+  var hash = s.indexOf('#');
+  if (hash >= 0) {
+    s = s.substring(hash + 1);
+  }
+  return s;
+}
+
 Pebble.addEventListener('webviewclosed', function (e) {
   if (e && e.response === -1) {
     return;
@@ -151,6 +164,7 @@ Pebble.addEventListener('webviewclosed', function (e) {
   }
   try {
     var s = typeof e.response === 'string' ? e.response : String(e.response);
+    s = normalizeWebviewConfigResponse(s);
     if (s.length === 0) {
       return;
     }

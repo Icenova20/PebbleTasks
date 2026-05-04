@@ -12,6 +12,7 @@
 #include <message_keys.auto.h>
 #include <pebble.h>
 #include <stdint.h>
+#include <stdlib.h>
 
 #define PERSIST_KEY_THEME 200
 
@@ -114,11 +115,34 @@ void theme_apply_all(void) {
   ui_loading_invalidate();
 }
 
+static int32_t read_theme_preset_tuple(const Tuple *t) {
+  if (!t) {
+    return -1;
+  }
+  if (t->type == TUPLE_CSTRING) {
+    const char *p = (const char *)t->value;
+    char *end = NULL;
+    long v = strtol(p, &end, 10);
+    if (end != p && v >= 0 && v < THEME_NUM_PRESETS) {
+      return (int32_t)v;
+    }
+    return -1;
+  }
+  int32_t v = messaging_tuple_read_s32(t);
+  if (v >= 0 && v < THEME_NUM_PRESETS) {
+    return v;
+  }
+  return -1;
+}
+
 void theme_handle_inbox(DictionaryIterator *it) {
   Tuple *t = dict_find(it, MESSAGE_KEY_themePreset);
   if (!t) {
     return;
   }
-  int32_t v = messaging_tuple_read_s32(t);
+  int32_t v = read_theme_preset_tuple(t);
+  if (v < 0) {
+    return;
+  }
   theme_set_from_phone(v);
 }

@@ -32,9 +32,9 @@ body.mode-local #needTokenHint{display:none}
   <label><input type="radio" name="mode" value="google"{{CHECK_GOOGLE}}/> Use Google Tasks (sync with your Google account)</label>
 </div>
 <p style="margin:1rem 0 .35rem 0">Watch theme</p>
-<div>
-  <label><input type="radio" name="theme" value="light"/> Light (white background)</label>
-  <label><input type="radio" name="theme" value="dark"/> Dark</label>
+<div id="watchThemeRow">
+  <label><input type="radio" name="watch_theme" value="light" checked/> Light (white background)</label>
+  <label><input type="radio" name="watch_theme" value="dark"/> Dark</label>
 </div>
 <button type="button" id="save">Save &amp; return to Pebble</button>
 <p class="hint" style="margin:.9rem 0 0 0">

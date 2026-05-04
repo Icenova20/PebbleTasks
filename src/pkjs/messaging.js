@@ -41,9 +41,11 @@ function pushThemePreset(presetId) {
   if (isNaN(n) || n < 0 || n > 1) {
     return;
   }
+  /* Integer keys + named key; values must be numbers for INT tuples on the watch. */
   var d = {};
-  d[protocol.THEME_PRESET] = n;
-  d.themePreset = n;
+  var v = n | 0;
+  d[protocol.THEME_PRESET] = v;
+  d.themePreset = v;
   Pebble.sendAppMessage(d, function () {}, function () {});
 }
 
