@@ -169,8 +169,7 @@ function settingsHtml(
   clientConfigured,
   initialMode,
   signedIn,
-  defaultOauthStart,
-  initialThemePreset
+  defaultOauthStart
 ) {
   const base = baseUrl.replace(/\/$/, '');
   const oauthInputValueEsc = escapeHtmlAttr(
@@ -179,9 +178,6 @@ function settingsHtml(
   const modeGoogle = initialMode === 'google';
   const checkLocal = modeGoogle ? '' : ' checked';
   const checkGoogle = modeGoogle ? ' checked' : '';
-  const themeDark = initialThemePreset === 1;
-  const themeCheckLight = themeDark ? '' : ' checked';
-  const themeCheckDark = themeDark ? ' checked' : '';
   const showLinked = !!signedIn;
   const showNeedToken = !signedIn && modeGoogle;
   const signedHtml = showLinked
@@ -202,9 +198,6 @@ function settingsHtml(
     MISSING_CREDS_HTML: missingCredsHtml,
     CHECK_LOCAL: checkLocal,
     CHECK_GOOGLE: checkGoogle,
-    THEME_PRESET_ID: themeDark ? '1' : '0',
-    THEME_CHECK_LIGHT: themeCheckLight,
-    THEME_CHECK_DARK: themeCheckDark,
     OAUTH_INPUT_VALUE: oauthInputValueEsc,
   });
 }
@@ -231,9 +224,8 @@ function oauthCompleteHtml(pasteLine, appUrl, settingsHomeUrl) {
 
 app.get('/', (req, res) => {
   const cfg = env();
-  // return_to, current_mode, signed_in, theme_preset are read in the page via getQueryParam (Rebble app-configuration-static pattern).
+  // return_to, current_mode, signed_in are read in the page via getQueryParam (Rebble app-configuration-static pattern).
   const initialMode = req.query.current_mode === 'google' ? 'google' : 'local';
-  const initialThemePreset = req.query.theme_preset === '1' ? 1 : 0;
   const signedIn = req.query.signed_in === '1' || req.query.signed_in === 'true';
   const baseNorm = cfg.baseUrl.replace(/\/$/, '');
   const returnToOauth =
@@ -250,8 +242,7 @@ app.get('/', (req, res) => {
         !!(cfg.clientId && cfg.clientSecret),
         initialMode,
         signedIn,
-        defaultOauthStart,
-        initialThemePreset
+        defaultOauthStart
       )
     );
 });

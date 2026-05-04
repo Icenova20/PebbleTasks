@@ -1,5 +1,4 @@
 #include "ui_draw.h"
-#include "theme.h"
 #include "ui_assets.h"
 #include "ui_constants.h"
 
@@ -14,7 +13,7 @@ static int list_row_y_nudged(int y) {
 /** Thin 1px outline around the menu cell (local bounds). */
 static void draw_list_cell_border(GContext *ctx, GRect bounds) {
   graphics_context_set_antialiased(ctx, false);
-  graphics_context_set_stroke_color(ctx, theme_accent());
+  graphics_context_set_stroke_color(ctx, GColorWhite);
   graphics_context_set_stroke_width(ctx, 1);
   graphics_draw_rect(ctx, GRect(0, 0, bounds.size.w, bounds.size.h));
 }

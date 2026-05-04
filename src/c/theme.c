@@ -12,7 +12,6 @@
 #include <message_keys.auto.h>
 #include <pebble.h>
 #include <stdint.h>
-#include <stdlib.h>
 
 #define PERSIST_KEY_THEME 200
 
@@ -27,28 +26,15 @@ static void load_palette_for_preset(int p) {
     p = THEME_NUM_PRESETS - 1;
   }
   s_preset = p;
-  /* One 64-color palette for all hardware; dithering on 1-bit. */
-  if (p == 0) {
-    /* Light */
-    s_bg = GColorWhite;
-    s_text = GColorBlack;
-    s_hi_bg = GColorDukeBlue;
-    s_hi_text = GColorWhite;
-    s_accent = GColorPictonBlue;
-    s_status_fg = GColorBlack;
-    s_toast_bg = GColorLightGray;
-    s_toast_text = GColorBlack;
-  } else {
-    /* Dark */
-    s_bg = GColorBlack;
-    s_text = GColorWhite;
-    s_hi_bg = GColorDukeBlue;
-    s_hi_text = GColorWhite;
-    s_accent = GColorVividCerulean;
-    s_status_fg = GColorWhite;
-    s_toast_bg = GColorDarkGray;
-    s_toast_text = GColorWhite;
-  }
+  /* One 64-color palette for all hardware; dithering on 1-bit. Dark only. */
+  s_bg = GColorBlack;
+  s_text = GColorWhite;
+  s_hi_bg = GColorDukeBlue;
+  s_hi_text = GColorWhite;
+  s_accent = GColorVividCerulean;
+  s_status_fg = GColorWhite;
+  s_toast_bg = GColorDarkGray;
+  s_toast_text = GColorWhite;
 }
 
 void theme_init(void) {
@@ -79,7 +65,7 @@ GColor theme_toast_text(void) { return s_toast_text; }
 GColor theme_menu_subtle_text(void) { return s_accent; }
 
 bool theme_icons_use_light_variant(void) {
-  return s_preset != 0;
+  return true;
 }
 
 void theme_add_button_colors(bool hi, GColor *out_disk, GColor *out_plus) {
@@ -91,7 +77,7 @@ void theme_add_button_colors(bool hi, GColor *out_disk, GColor *out_plus) {
     *out_plus = s_accent;
   } else {
     *out_disk = s_accent;
-    *out_plus = s_text;
+    *out_plus = GColorWhite;
   }
 }
 
@@ -115,34 +101,11 @@ void theme_apply_all(void) {
   ui_loading_invalidate();
 }
 
-static int32_t read_theme_preset_tuple(const Tuple *t) {
-  if (!t) {
-    return -1;
-  }
-  if (t->type == TUPLE_CSTRING) {
-    const char *p = (const char *)t->value;
-    char *end = NULL;
-    long v = strtol(p, &end, 10);
-    if (end != p && v >= 0 && v < THEME_NUM_PRESETS) {
-      return (int32_t)v;
-    }
-    return -1;
-  }
-  int32_t v = messaging_tuple_read_s32(t);
-  if (v >= 0 && v < THEME_NUM_PRESETS) {
-    return v;
-  }
-  return -1;
-}
-
 void theme_handle_inbox(DictionaryIterator *it) {
   Tuple *t = dict_find(it, MESSAGE_KEY_themePreset);
   if (!t) {
     return;
   }
-  int32_t v = read_theme_preset_tuple(t);
-  if (v < 0) {
-    return;
-  }
+  int32_t v = messaging_tuple_read_s32(t);
   theme_set_from_phone(v);
 }

@@ -3,43 +3,10 @@ var commandHandlers = require('./command_handlers');
 var oauthConfig = require('./oauth_config');
 var authStorage = require('./auth_storage');
 
-/**
- * Theme must sync to the watch over AppMessage (unlike mode, which is phone-only).
- * Use string watchTheme first — same pattern as cfg.mode — so Pebble WebViews cannot drop or mangle 0.
- */
-function applyThemeFromConfig(cfg) {
-  if (!cfg) {
-    return;
-  }
-  var tp = null;
-  if (cfg.watchTheme === 'light' || cfg.watchTheme === 'dark') {
-    tp = cfg.watchTheme === 'dark' ? 1 : 0;
-  } else if (cfg.theme === 'light' || cfg.theme === 'Light') {
-    tp = 0;
-  } else if (cfg.theme === 'dark' || cfg.theme === 'Dark') {
-    tp = 1;
-  } else if (cfg.themePreset !== undefined && cfg.themePreset !== null) {
-    var raw = cfg.themePreset;
-    if (typeof raw === 'boolean') {
-      tp = raw ? 1 : 0;
-    } else {
-      var n = parseInt(raw, 10);
-      if (!isNaN(n) && (n === 0 || n === 1)) {
-        tp = n;
-      }
-    }
-  }
-  if (tp !== null) {
-    authStorage.setThemePreset(tp);
-    messaging.pushThemePreset(tp);
-  }
-}
-
 function applyConfigObject(cfg) {
   if (!cfg) {
     return;
   }
-  applyThemeFromConfig(cfg);
   if (cfg.access_token) {
     var ex = cfg.expires_in || 3600;
     authStorage.setAuthObject({
@@ -60,7 +27,6 @@ Pebble.addEventListener('ready', function () {
   if (hc.length > 0 && authStorage.getAuthObject()) {
     authStorage.setMode('google');
   }
-  messaging.pushThemePreset(authStorage.getThemePreset());
 });
 
 function settingsUrlUnreachableFromPhone(url) {
@@ -133,72 +99,48 @@ Pebble.addEventListener('showConfiguration', function (e) {
   var auth = authStorage.getAuthObject();
   var hasGoogleAuth = !!(auth && (auth.access_token || auth.refresh_token));
   var signedQ = 'signed_in=' + (hasGoogleAuth ? '1' : '0');
-  var themeQ = 'theme_preset=' + encodeURIComponent(String(authStorage.getThemePreset()));
   var startUrl =
-    base +
-    '/?return_to=' +
-    encodeURIComponent(ret) +
-    '&' +
-    modeQ +
-    '&' +
-    signedQ +
-    '&' +
-    themeQ;
+    base + '/?return_to=' + encodeURIComponent(ret) + '&' + modeQ + '&' + signedQ;
   Pebble.openURL(startUrl);
 });
 
 /**
- * Parse settings JSON from webviewclosed.
- * Rebble static config: JSON.parse(decodeURIComponent(e.response)) when response is the fragment only.
- * Some builds pass a full pebblejs://close#... URL, an already-decoded JSON string, or a plain object
- * (Clay / PebbleKit variants). See https://developer.rebble.io/guides/user-interfaces/app-configuration-static/
+ * Fragment from config close URL (return_to + encodeURIComponent(JSON)).
+ * https://developer.rebble.io/guides/user-interfaces/app-configuration-static/
  */
-function parseConfigFromWebviewClosed(e) {
-  if (!e || e.response === undefined || e.response === null || e.response === -1) {
-    return null;
-  }
-  var r = e.response;
-  if (typeof r === 'object' && r !== null && !Array.isArray(r)) {
-    return r;
-  }
-  if (typeof r !== 'string') {
-    return null;
-  }
-  var s = r;
-  if (s.length === 0) {
-    return null;
-  }
-  var hash = s.indexOf('#');
-  if (hash >= 0) {
-    s = s.substring(hash + 1);
-  }
+function tryParseConfigFragment(s) {
+  s = typeof s === 'string' ? s : String(s);
   if (s.length === 0) {
     return null;
   }
   try {
     return JSON.parse(decodeURIComponent(s));
   } catch (a) {
-    /* Rebble example path failed; fragment may already be decoded. */
+    /* Some runtimes hand back decoded JSON. */
   }
   try {
     return JSON.parse(s);
   } catch (b) {
-    /* */
+    return null;
   }
-  try {
-    return JSON.parse(decodeURIComponent(decodeURIComponent(s)));
-  } catch (c) {
-    /* */
-  }
-  return null;
 }
 
 Pebble.addEventListener('webviewclosed', function (e) {
-  var cfg = parseConfigFromWebviewClosed(e);
-  if (!cfg) {
+  if (e && e.response === -1) {
+    return;
+  }
+  if (!e || e.response === undefined || e.response === null) {
     return;
   }
   try {
+    var s = typeof e.response === 'string' ? e.response : String(e.response);
+    if (s.length === 0) {
+      return;
+    }
+    var cfg = tryParseConfigFragment(s);
+    if (!cfg) {
+      return;
+    }
     applyConfigObject(cfg);
   } catch (err) {
     /* ignore */

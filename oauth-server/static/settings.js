@@ -38,34 +38,13 @@
     oauthIn.value = oauthStartUrl;
   }
   var modes = document.getElementsByName('mode');
-  var themeRow = document.getElementById('watchThemeRow');
-  var themes = themeRow ? themeRow.querySelectorAll('input[name="watch_theme"]') : [];
   var curMode = getQueryParam('current_mode', 'local');
-  /* Pebble WebViews sometimes omit location.search; server sets data-theme-preset on <body>. */
-  var curThemeNum = 0;
-  var dataPreset =
-    document.body && document.body.getAttribute('data-theme-preset') !== null
-      ? document.body.getAttribute('data-theme-preset')
-      : '';
-  if (dataPreset === '0' || dataPreset === '1') {
-    curThemeNum = parseInt(dataPreset, 10);
-  } else {
-    var curThemeRaw = getQueryParam('theme_preset', '0');
-    curThemeNum = parseInt(curThemeRaw, 10);
-    if (isNaN(curThemeNum) || curThemeNum < 0 || curThemeNum > 1) {
-      curThemeNum = 0;
-    }
-  }
   if (curMode === 'google' || curMode === 'local') {
     for (var m = 0; m < modes.length; m++) {
       if (modes[m].value === curMode) {
         modes[m].checked = true;
       }
     }
-  }
-  var pickTheme = curThemeNum === 1 ? 'dark' : 'light';
-  for (var th = 0; th < themes.length; th++) {
-    themes[th].checked = themes[th].value === pickTheme;
   }
   if (document.body) {
     if (curMode === 'google') {
@@ -141,27 +120,11 @@
     for (var i = 0; i < modes.length; i++) {
       if (modes[i].checked) mode = modes[i].value;
     }
-    var watchTheme = 'light';
-    for (var jt = 0; jt < themes.length; jt++) {
-      if (themes[jt].checked && themes[jt].value === 'dark') {
-        watchTheme = 'dark';
-      }
-    }
-    if (themes.length === 0) {
-      watchTheme = curThemeNum === 1 ? 'dark' : 'light';
-    }
-    var themePreset = watchTheme === 'dark' ? 1 : 0;
     if (!rt) {
       alert('Missing return_to — open settings from the Pebble app.');
       return;
     }
-    /* watchTheme mirrors cfg.mode (string); PebbleKit handles strings reliably. themePreset kept for tools. */
-    var payload = {
-      mode: mode,
-      watchTheme: watchTheme,
-      themePreset: themePreset,
-      theme: watchTheme,
-    };
+    var payload = { mode: mode };
     if (rt.indexOf('#') >= 0) {
       document.location = rt + encodeURIComponent(JSON.stringify(payload));
     } else {
@@ -208,11 +171,6 @@
       }
       if (!o.mode) {
         o.mode = 'google';
-      }
-      var tpPaste = document.body && document.body.getAttribute('data-theme-preset');
-      if (tpPaste === '0' || tpPaste === '1') {
-        o.watchTheme = tpPaste === '1' ? 'dark' : 'light';
-        o.themePreset = parseInt(tpPaste, 10);
       }
       var enc = encodeURIComponent(JSON.stringify(o));
       if (rt.indexOf('#') >= 0) {
