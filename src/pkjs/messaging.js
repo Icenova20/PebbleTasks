@@ -35,10 +35,10 @@ function sendToWatch(dict) {
   );
 }
 
-/** Single dark theme on watch (THEME_NUM_PRESETS 1); kept for API compatibility. */
+/** Pushes theme to watch: 0 = light, 1 = dark (matches THEME_NUM_PRESETS / theme.c). */
 function pushThemePreset(presetId) {
   var n = parseInt(presetId, 10);
-  if (isNaN(n) || n !== 0) {
+  if (isNaN(n) || n < 0 || n > 1) {
     return;
   }
   var d = {};

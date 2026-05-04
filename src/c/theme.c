@@ -26,15 +26,28 @@ static void load_palette_for_preset(int p) {
     p = THEME_NUM_PRESETS - 1;
   }
   s_preset = p;
-  /* One 64-color palette for all hardware; dithering on 1-bit. Dark only. */
-  s_bg = GColorBlack;
-  s_text = GColorWhite;
-  s_hi_bg = GColorDukeBlue;
-  s_hi_text = GColorWhite;
-  s_accent = GColorVividCerulean;
-  s_status_fg = GColorWhite;
-  s_toast_bg = GColorDarkGray;
-  s_toast_text = GColorWhite;
+  /* One 64-color palette for all hardware; dithering on 1-bit. */
+  if (p == 0) {
+    /* Light */
+    s_bg = GColorWhite;
+    s_text = GColorBlack;
+    s_hi_bg = GColorDukeBlue;
+    s_hi_text = GColorWhite;
+    s_accent = GColorPictonBlue;
+    s_status_fg = GColorBlack;
+    s_toast_bg = GColorLightGray;
+    s_toast_text = GColorBlack;
+  } else {
+    /* Dark */
+    s_bg = GColorBlack;
+    s_text = GColorWhite;
+    s_hi_bg = GColorDukeBlue;
+    s_hi_text = GColorWhite;
+    s_accent = GColorVividCerulean;
+    s_status_fg = GColorWhite;
+    s_toast_bg = GColorDarkGray;
+    s_toast_text = GColorWhite;
+  }
 }
 
 void theme_init(void) {
@@ -65,7 +78,7 @@ GColor theme_toast_text(void) { return s_toast_text; }
 GColor theme_menu_subtle_text(void) { return s_accent; }
 
 bool theme_icons_use_light_variant(void) {
-  return true;
+  return s_preset != 0;
 }
 
 void theme_add_button_colors(bool hi, GColor *out_disk, GColor *out_plus) {
@@ -77,7 +90,7 @@ void theme_add_button_colors(bool hi, GColor *out_disk, GColor *out_plus) {
     *out_plus = s_accent;
   } else {
     *out_disk = s_accent;
-    *out_plus = GColorWhite;
+    *out_plus = s_text;
   }
 }
 

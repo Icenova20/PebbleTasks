@@ -224,7 +224,7 @@ function oauthCompleteHtml(pasteLine, appUrl, settingsHomeUrl) {
 
 app.get('/', (req, res) => {
   const cfg = env();
-  // return_to, current_mode, signed_in are read in the page via getQueryParam (Rebble app-configuration-static pattern).
+  // return_to, current_mode, signed_in, theme_preset are read in the page via getQueryParam (Rebble app-configuration-static pattern).
   const initialMode = req.query.current_mode === 'google' ? 'google' : 'local';
   const signedIn = req.query.signed_in === '1' || req.query.signed_in === 'true';
   const baseNorm = cfg.baseUrl.replace(/\/$/, '');

@@ -2,6 +2,7 @@ var oauthConfig = require('./oauth_config');
 
 var MODE_KEY = 'pebbletasks_mode';
 var AUTH_KEY = 'pebbletasks_google_auth';
+var THEME_PRESET_KEY = 'pebbletasks_theme_preset';
 
 /** PebbleKit JS may not define `atob`; payload is ASCII JSON after decode. */
 function base64DecodeToBinaryString(b64) {
@@ -113,6 +114,24 @@ function getMode() {
 function setMode(mode) {
   if (mode === 'google' || mode === 'local') {
     localStorage.setItem(MODE_KEY, mode);
+  }
+}
+
+/** @returns {number} 0 = light, 1 = dark */
+function getThemePreset() {
+  var raw = localStorage.getItem(THEME_PRESET_KEY);
+  if (raw === '1') {
+    return 1;
+  }
+  return 0;
+}
+
+/** @param {number} n 0 = light, 1 = dark */
+function setThemePreset(n) {
+  if (n === 1) {
+    localStorage.setItem(THEME_PRESET_KEY, '1');
+  } else {
+    localStorage.setItem(THEME_PRESET_KEY, '0');
   }
 }
 
@@ -242,6 +261,8 @@ function getValidAccessTokenAsync(callback) {
 module.exports = {
   getMode: getMode,
   setMode: setMode,
+  getThemePreset: getThemePreset,
+  setThemePreset: setThemePreset,
   getAuthObject: getAuthObject,
   setAuthObject: setAuthObject,
   clearGoogleAuth: clearGoogleAuth,

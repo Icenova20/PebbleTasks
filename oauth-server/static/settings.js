@@ -38,12 +38,20 @@
     oauthIn.value = oauthStartUrl;
   }
   var modes = document.getElementsByName('mode');
+  var themes = document.getElementsByName('theme');
   var curMode = getQueryParam('current_mode', 'local');
+  var curThemePreset = getQueryParam('theme_preset', '0');
   if (curMode === 'google' || curMode === 'local') {
     for (var m = 0; m < modes.length; m++) {
       if (modes[m].value === curMode) {
         modes[m].checked = true;
       }
+    }
+  }
+  var pickTheme = curThemePreset === '1' || curThemePreset === 1 ? 'dark' : 'light';
+  for (var th = 0; th < themes.length; th++) {
+    if (themes[th].value === pickTheme) {
+      themes[th].checked = true;
     }
   }
   if (document.body) {
@@ -120,11 +128,17 @@
     for (var i = 0; i < modes.length; i++) {
       if (modes[i].checked) mode = modes[i].value;
     }
+    var themePreset = 0;
+    for (var jt = 0; jt < themes.length; jt++) {
+      if (themes[jt].checked && themes[jt].value === 'dark') {
+        themePreset = 1;
+      }
+    }
     if (!rt) {
       alert('Missing return_to — open settings from the Pebble app.');
       return;
     }
-    var payload = { mode: mode };
+    var payload = { mode: mode, themePreset: themePreset };
     if (rt.indexOf('#') >= 0) {
       document.location = rt + encodeURIComponent(JSON.stringify(payload));
     } else {

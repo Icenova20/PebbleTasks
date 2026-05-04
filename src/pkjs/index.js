@@ -7,6 +7,13 @@ function applyConfigObject(cfg) {
   if (!cfg) {
     return;
   }
+  if (cfg.themePreset !== undefined && cfg.themePreset !== null) {
+    var tp = parseInt(cfg.themePreset, 10);
+    if (!isNaN(tp) && (tp === 0 || tp === 1)) {
+      authStorage.setThemePreset(tp);
+      messaging.pushThemePreset(tp);
+    }
+  }
   if (cfg.access_token) {
     var ex = cfg.expires_in || 3600;
     authStorage.setAuthObject({
@@ -27,6 +34,7 @@ Pebble.addEventListener('ready', function () {
   if (hc.length > 0 && authStorage.getAuthObject()) {
     authStorage.setMode('google');
   }
+  messaging.pushThemePreset(authStorage.getThemePreset());
 });
 
 function settingsUrlUnreachableFromPhone(url) {
@@ -99,8 +107,17 @@ Pebble.addEventListener('showConfiguration', function (e) {
   var auth = authStorage.getAuthObject();
   var hasGoogleAuth = !!(auth && (auth.access_token || auth.refresh_token));
   var signedQ = 'signed_in=' + (hasGoogleAuth ? '1' : '0');
+  var themeQ = 'theme_preset=' + encodeURIComponent(String(authStorage.getThemePreset()));
   var startUrl =
-    base + '/?return_to=' + encodeURIComponent(ret) + '&' + modeQ + '&' + signedQ;
+    base +
+    '/?return_to=' +
+    encodeURIComponent(ret) +
+    '&' +
+    modeQ +
+    '&' +
+    signedQ +
+    '&' +
+    themeQ;
   Pebble.openURL(startUrl);
 });
 
