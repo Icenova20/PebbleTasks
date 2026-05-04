@@ -154,7 +154,11 @@
       alert('Missing return_to — open settings from the Pebble app.');
       return;
     }
-    var payload = { mode: mode, themePreset: themePreset };
+    var payload = {
+      mode: mode,
+      themePreset: themePreset,
+      theme: themePreset === 1 ? 'dark' : 'light',
+    };
     if (rt.indexOf('#') >= 0) {
       document.location = rt + encodeURIComponent(JSON.stringify(payload));
     } else {

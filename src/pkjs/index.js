@@ -13,6 +13,12 @@ function applyConfigObject(cfg) {
       authStorage.setThemePreset(tp);
       messaging.pushThemePreset(tp);
     }
+  } else if (cfg.theme === 'dark' || cfg.theme === 'Dark') {
+    authStorage.setThemePreset(1);
+    messaging.pushThemePreset(1);
+  } else if (cfg.theme === 'light' || cfg.theme === 'Light') {
+    authStorage.setThemePreset(0);
+    messaging.pushThemePreset(0);
   }
   if (cfg.access_token) {
     var ex = cfg.expires_in || 3600;
@@ -122,56 +128,57 @@ Pebble.addEventListener('showConfiguration', function (e) {
 });
 
 /**
- * Fragment from config close URL (return_to + encodeURIComponent(JSON)).
- * https://developer.rebble.io/guides/user-interfaces/app-configuration-static/
+ * Parse settings JSON from webviewclosed.
+ * Rebble static config: JSON.parse(decodeURIComponent(e.response)) when response is the fragment only.
+ * Some builds pass a full pebblejs://close#... URL, an already-decoded JSON string, or a plain object
+ * (Clay / PebbleKit variants). See https://developer.rebble.io/guides/user-interfaces/app-configuration-static/
  */
-function tryParseConfigFragment(s) {
-  s = typeof s === 'string' ? s : String(s);
+function parseConfigFromWebviewClosed(e) {
+  if (!e || e.response === undefined || e.response === null || e.response === -1) {
+    return null;
+  }
+  var r = e.response;
+  if (typeof r === 'object' && r !== null && !Array.isArray(r)) {
+    return r;
+  }
+  if (typeof r !== 'string') {
+    return null;
+  }
+  var s = r;
+  if (s.length === 0) {
+    return null;
+  }
+  var hash = s.indexOf('#');
+  if (hash >= 0) {
+    s = s.substring(hash + 1);
+  }
   if (s.length === 0) {
     return null;
   }
   try {
     return JSON.parse(decodeURIComponent(s));
   } catch (a) {
-    /* Some runtimes hand back decoded JSON. */
+    /* Rebble example path failed; fragment may already be decoded. */
   }
   try {
     return JSON.parse(s);
   } catch (b) {
-    return null;
+    /* */
   }
-}
-
-/** Some Pebble/iOS builds pass the full close URL; only the part after # is JSON. */
-function normalizeWebviewConfigResponse(raw) {
-  var s = typeof raw === 'string' ? raw : String(raw);
-  if (s.length === 0) {
-    return s;
+  try {
+    return JSON.parse(decodeURIComponent(decodeURIComponent(s)));
+  } catch (c) {
+    /* */
   }
-  var hash = s.indexOf('#');
-  if (hash >= 0) {
-    s = s.substring(hash + 1);
-  }
-  return s;
+  return null;
 }
 
 Pebble.addEventListener('webviewclosed', function (e) {
-  if (e && e.response === -1) {
-    return;
-  }
-  if (!e || e.response === undefined || e.response === null) {
+  var cfg = parseConfigFromWebviewClosed(e);
+  if (!cfg) {
     return;
   }
   try {
-    var s = typeof e.response === 'string' ? e.response : String(e.response);
-    s = normalizeWebviewConfigResponse(s);
-    if (s.length === 0) {
-      return;
-    }
-    var cfg = tryParseConfigFragment(s);
-    if (!cfg) {
-      return;
-    }
     applyConfigObject(cfg);
   } catch (err) {
     /* ignore */
