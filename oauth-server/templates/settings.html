@@ -21,7 +21,7 @@ body.mode-local #noEchoHint{display:none}
 body.mode-local #needTokenHint{display:none}
 #opensourceNote,#scopeNote{margin-top:.75rem}
 </style></head>
-<body class="mode-{{BODY_MODE}}" data-settings-base="{{SETTINGS_BASE}}">
+<body class="mode-{{BODY_MODE}}" data-settings-base="{{SETTINGS_BASE}}" data-theme-preset="{{THEME_PRESET_ID}}">
 <h1>PebbleTasks</h1>
 {{SIGNED_STATUS_HTML}}
 {{NEED_TOKEN_HTML}}
@@ -33,8 +33,8 @@ body.mode-local #needTokenHint{display:none}
 </div>
 <p style="margin:1rem 0 .35rem 0">Watch theme</p>
 <div id="watchThemeRow">
-  <label><input type="radio" name="watch_theme" value="light" checked/> Light (white background)</label>
-  <label><input type="radio" name="watch_theme" value="dark"/> Dark</label>
+  <label><input type="radio" name="watch_theme" value="light"{{THEME_CHECK_LIGHT}}/> Light (white background)</label>
+  <label><input type="radio" name="watch_theme" value="dark"{{THEME_CHECK_DARK}}/> Dark</label>
 </div>
 <button type="button" id="save">Save &amp; return to Pebble</button>
 <p class="hint" style="margin:.9rem 0 0 0">

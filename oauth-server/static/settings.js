@@ -41,10 +41,20 @@
   var themeRow = document.getElementById('watchThemeRow');
   var themes = themeRow ? themeRow.querySelectorAll('input[name="watch_theme"]') : [];
   var curMode = getQueryParam('current_mode', 'local');
-  var curThemeRaw = getQueryParam('theme_preset', '0');
-  var curThemeNum = parseInt(curThemeRaw, 10);
-  if (isNaN(curThemeNum) || curThemeNum < 0 || curThemeNum > 1) {
-    curThemeNum = 0;
+  /* Pebble WebViews sometimes omit location.search; server sets data-theme-preset on <body>. */
+  var curThemeNum = 0;
+  var dataPreset =
+    document.body && document.body.getAttribute('data-theme-preset') !== null
+      ? document.body.getAttribute('data-theme-preset')
+      : '';
+  if (dataPreset === '0' || dataPreset === '1') {
+    curThemeNum = parseInt(dataPreset, 10);
+  } else {
+    var curThemeRaw = getQueryParam('theme_preset', '0');
+    curThemeNum = parseInt(curThemeRaw, 10);
+    if (isNaN(curThemeNum) || curThemeNum < 0 || curThemeNum > 1) {
+      curThemeNum = 0;
+    }
   }
   if (curMode === 'google' || curMode === 'local') {
     for (var m = 0; m < modes.length; m++) {
