@@ -141,23 +141,26 @@
     for (var i = 0; i < modes.length; i++) {
       if (modes[i].checked) mode = modes[i].value;
     }
-    var themePreset = 0;
+    var watchTheme = 'light';
     for (var jt = 0; jt < themes.length; jt++) {
       if (themes[jt].checked && themes[jt].value === 'dark') {
-        themePreset = 1;
+        watchTheme = 'dark';
       }
     }
     if (themes.length === 0) {
-      themePreset = curThemeNum;
+      watchTheme = curThemeNum === 1 ? 'dark' : 'light';
     }
+    var themePreset = watchTheme === 'dark' ? 1 : 0;
     if (!rt) {
       alert('Missing return_to — open settings from the Pebble app.');
       return;
     }
+    /* watchTheme mirrors cfg.mode (string); PebbleKit handles strings reliably. themePreset kept for tools. */
     var payload = {
       mode: mode,
+      watchTheme: watchTheme,
       themePreset: themePreset,
-      theme: themePreset === 1 ? 'dark' : 'light',
+      theme: watchTheme,
     };
     if (rt.indexOf('#') >= 0) {
       document.location = rt + encodeURIComponent(JSON.stringify(payload));
@@ -205,6 +208,11 @@
       }
       if (!o.mode) {
         o.mode = 'google';
+      }
+      var tpPaste = document.body && document.body.getAttribute('data-theme-preset');
+      if (tpPaste === '0' || tpPaste === '1') {
+        o.watchTheme = tpPaste === '1' ? 'dark' : 'light';
+        o.themePreset = parseInt(tpPaste, 10);
       }
       var enc = encodeURIComponent(JSON.stringify(o));
       if (rt.indexOf('#') >= 0) {

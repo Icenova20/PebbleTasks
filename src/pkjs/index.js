@@ -3,23 +3,43 @@ var commandHandlers = require('./command_handlers');
 var oauthConfig = require('./oauth_config');
 var authStorage = require('./auth_storage');
 
+/**
+ * Theme must sync to the watch over AppMessage (unlike mode, which is phone-only).
+ * Use string watchTheme first — same pattern as cfg.mode — so Pebble WebViews cannot drop or mangle 0.
+ */
+function applyThemeFromConfig(cfg) {
+  if (!cfg) {
+    return;
+  }
+  var tp = null;
+  if (cfg.watchTheme === 'light' || cfg.watchTheme === 'dark') {
+    tp = cfg.watchTheme === 'dark' ? 1 : 0;
+  } else if (cfg.theme === 'light' || cfg.theme === 'Light') {
+    tp = 0;
+  } else if (cfg.theme === 'dark' || cfg.theme === 'Dark') {
+    tp = 1;
+  } else if (cfg.themePreset !== undefined && cfg.themePreset !== null) {
+    var raw = cfg.themePreset;
+    if (typeof raw === 'boolean') {
+      tp = raw ? 1 : 0;
+    } else {
+      var n = parseInt(raw, 10);
+      if (!isNaN(n) && (n === 0 || n === 1)) {
+        tp = n;
+      }
+    }
+  }
+  if (tp !== null) {
+    authStorage.setThemePreset(tp);
+    messaging.pushThemePreset(tp);
+  }
+}
+
 function applyConfigObject(cfg) {
   if (!cfg) {
     return;
   }
-  if (cfg.themePreset !== undefined && cfg.themePreset !== null) {
-    var tp = parseInt(cfg.themePreset, 10);
-    if (!isNaN(tp) && (tp === 0 || tp === 1)) {
-      authStorage.setThemePreset(tp);
-      messaging.pushThemePreset(tp);
-    }
-  } else if (cfg.theme === 'dark' || cfg.theme === 'Dark') {
-    authStorage.setThemePreset(1);
-    messaging.pushThemePreset(1);
-  } else if (cfg.theme === 'light' || cfg.theme === 'Light') {
-    authStorage.setThemePreset(0);
-    messaging.pushThemePreset(0);
-  }
+  applyThemeFromConfig(cfg);
   if (cfg.access_token) {
     var ex = cfg.expires_in || 3600;
     authStorage.setAuthObject({
