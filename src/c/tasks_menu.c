@@ -266,6 +266,7 @@ void tasks_menu_window_unload(Window *w) {
   (void)w;
   s_tasks_window_is_on_stack = false;
   ui_loading_stop();
+  ui_toast_detach_from_window(s_tasks_window);
   destroy_tasks_menu_layers();
   destroy_tasks_menu_data();
 }

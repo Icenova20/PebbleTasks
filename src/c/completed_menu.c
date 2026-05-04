@@ -9,6 +9,7 @@
 #include "ui_constants.h"
 #include "ui_draw.h"
 #include "ui_loading.h"
+#include "ui_toast.h"
 
 static Window *s_completed_window;
 static MenuLayer *s_completed_menu;
@@ -212,6 +213,7 @@ void completed_menu_window_unload(Window *w) {
   (void)w;
   s_completed_window_on_stack = false;
   ui_loading_stop();
+  ui_toast_detach_from_window(s_completed_window);
   destroy_completed_menu_layers();
   destroy_completed_menu_data();
 }

@@ -3,6 +3,7 @@
 #include <string.h>
 
 #include "completed_menu.h"
+#include "connection_watch.h"
 #include "main_menu.h"
 #include "messaging.h"
 #include "pebble_tasks.h"
@@ -56,9 +57,11 @@ static void app_init(void) {
   app_message_open(app_message_inbox_size_maximum(), app_message_outbox_size_maximum());
   s_dictation = dictation_session_create(sizeof(s_dictation_text), dictation_cb, NULL);
   window_stack_push(main_menu_get_window(), true);
+  connection_watch_init();
 }
 
 static void app_deinit(void) {
+  connection_watch_deinit();
   completed_menu_deinit();
   tasks_menu_deinit();
   if (s_dictation) {

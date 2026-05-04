@@ -5,12 +5,16 @@
 #include "tasks_menu.h"
 #include "theme.h"
 #include "ui_loading.h"
+#include "ui_toast.h"
 
 #include <message_keys.auto.h>
 
 void messaging_send(int cmd, int32_t list_index, int32_t task_index, const char *text) {
   DictionaryIterator *it;
   if (app_message_outbox_begin(&it) != APP_MSG_OK) {
+    if (!connection_service_peek_pebble_app_connection()) {
+      ui_toast_show("Phone disconnected");
+    }
     return;
   }
   dict_write_int32(it, MESSAGE_KEY_cmd, cmd);
