@@ -104,6 +104,31 @@ function dispatch(cmd, listIx, taskIx, text) {
     }
     messaging.replyOpenTaskLines(listIx);
     messaging.replyCompletedTaskLines(listIx);
+  } else if (cmd === protocol.CMD_W_SET_TASK_DUE) {
+    var dueLocal = storage.normalizeLine(text);
+    if (/^\d{4}-\d{2}-\d{2}$/.test(dueLocal)) {
+      d = storage.loadData();
+      if (listIx >= 0 && listIx < d.lists.length) {
+        var listDue = d.lists[listIx];
+        var openDue = storage.getOpenTasksInOrder(listDue);
+        if (taskIx >= 0 && taskIx < openDue.length) {
+          openDue[taskIx].due = dueLocal;
+          storage.saveData(d);
+        }
+      }
+    }
+    messaging.replyOpenTaskLines(listIx);
+  } else if (cmd === protocol.CMD_W_CLEAR_TASK_DUE) {
+    d = storage.loadData();
+    if (listIx >= 0 && listIx < d.lists.length) {
+      var listClr = d.lists[listIx];
+      var openClr = storage.getOpenTasksInOrder(listClr);
+      if (taskIx >= 0 && taskIx < openClr.length) {
+        delete openClr[taskIx].due;
+        storage.saveData(d);
+      }
+    }
+    messaging.replyOpenTaskLines(listIx);
   } else if (cmd === protocol.CMD_W_DELETE_LIST) {
     d = storage.loadData();
     if (listIx >= 0 && listIx < d.lists.length) {

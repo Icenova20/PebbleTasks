@@ -2,6 +2,7 @@
 #include "completed_menu.h"
 #include "main_menu.h"
 #include "messaging.h"
+#include "task_action_menu.h"
 #include "pebble_tasks.h"
 #include "protocol.h"
 #include "str_util.h"
@@ -13,6 +14,8 @@
 #include "ui_loading.h"
 #include "ui_toast.h"
 
+#include <string.h>
+
 static Window *s_tasks_window;
 static MenuLayer *s_tasks_menu;
 #ifndef PBL_ROUND
@@ -21,6 +24,7 @@ static Layer *s_tasks_clock;
 static GTextAttributes *s_tasks_text_attr;
 static int s_tasks_num_rows;
 static char *s_tasks_titles[MAX_MENU_LINES + 1];
+static char *s_tasks_due[MAX_MENU_LINES + 1];
 static int s_tasks_open_count;
 static bool s_tasks_show_completed_nav;
 static int s_current_list_index;
@@ -56,7 +60,8 @@ static void tasks_draw_row(GContext *ctx, const Layer *cell_layer, MenuIndex *id
   if (!s_tasks_titles[idx->row]) {
     return;
   }
-  ui_draw_tasks_open_cell(ctx, cell_layer, s_tasks_titles[idx->row], s_tasks_text_attr);
+  ui_draw_tasks_open_cell(ctx, cell_layer, s_tasks_titles[idx->row], s_tasks_due[idx->row],
+                          s_tasks_text_attr);
 }
 
 static int16_t tasks_get_height(MenuLayer *ml, MenuIndex *idx, void *ctx) {
@@ -79,6 +84,14 @@ static int16_t tasks_get_height(MenuLayer *ml, MenuIndex *idx, void *ctx) {
       GRect(0, 0, w, 500), GTextOverflowModeTrailingEllipsis,
       PBL_IF_ROUND_ELSE(GTextAlignmentCenter, GTextAlignmentLeft), NULL);
   int h = sz.h + UI_CELL_MARGIN * 2;
+  const char *due = s_tasks_due[idx->row];
+  if (due && due[0]) {
+    GSize dz = graphics_text_layout_get_content_size_with_attributes(
+        due, fonts_get_system_font(UI_TASK_DUE_FONT_KEY), GRect(0, 0, w, 500),
+        GTextOverflowModeTrailingEllipsis, PBL_IF_ROUND_ELSE(GTextAlignmentCenter, GTextAlignmentLeft),
+        NULL);
+    h += UI_TASK_DUE_GAP + dz.h;
+  }
   if (h < UI_CELL_MIN) {
     h = UI_CELL_MIN;
   }
@@ -130,7 +143,7 @@ static void tasks_select_long(MenuLayer *ml, MenuIndex *idx, void *ctx) {
     return;
   }
   if (row > 0 && row <= s_tasks_open_count) {
-    messaging_send(CMD_W_DELETE_TASK, s_current_list_index, row - 1, NULL);
+    task_action_menu_show(s_current_list_index, row - 1);
   }
 }
 
@@ -192,7 +205,14 @@ static void destroy_tasks_menu_layers(void) {
 }
 
 static void destroy_tasks_menu_data(void) {
-  str_util_free_titles(s_tasks_titles, s_tasks_num_rows);
+  int open = s_tasks_open_count;
+  for (int i = 1; i <= MAX_MENU_LINES; i++) {
+    if (s_tasks_due[i]) {
+      free(s_tasks_due[i]);
+      s_tasks_due[i] = NULL;
+    }
+  }
+  str_util_free_titles(s_tasks_titles, 1 + open);
   s_tasks_num_rows = 0;
   s_tasks_open_count = 0;
   s_tasks_show_completed_nav = false;
@@ -216,6 +236,18 @@ static void rebuild_tasks_menu_internal(const char *payload, int for_list, bool 
   if (!s_tasks_titles[0]) {
     s_tasks_num_rows = 0;
     return;
+  }
+  for (int i = 1; i <= s_tasks_open_count; i++) {
+    s_tasks_due[i] = NULL;
+    char *line = s_tasks_titles[i];
+    if (!line) {
+      continue;
+    }
+    char *p = strchr(line, '\x1F');
+    if (p) {
+      *p = '\0';
+      s_tasks_due[i] = str_util_strdup(p + 1);
+    }
   }
   if (s_tasks_menu) {
     menu_layer_reload_data(s_tasks_menu);

@@ -187,35 +187,82 @@ void ui_draw_tasks_checkbox_frame(GContext *ctx, const Layer *cell_layer) {
   }
 }
 
-void ui_draw_tasks_open_cell(GContext *ctx, const Layer *cell_layer, const char *title,
+void ui_draw_tasks_open_cell(GContext *ctx, const Layer *cell_layer, const char *title, const char *due,
                              GTextAttributes *round_flow) {
   GRect bounds = layer_get_bounds(cell_layer);
 
   bool hi = menu_cell_layer_is_highlighted(cell_layer);
+  GFont title_font = fonts_get_system_font(UI_MENU_FONT_KEY);
+  GFont due_font = fonts_get_system_font(UI_TASK_DUE_FONT_KEY);
   graphics_context_set_text_color(ctx, hi ? theme_highlight_text() : theme_text());
   menu_text_antialias(ctx);
 
 #ifdef PBL_ROUND
   {
-    int th = bounds.size.h - UI_MENU_TEXT_Y;
-    if (th < 1) {
-      th = bounds.size.h;
+    int avail_w = bounds.size.w - TASK_CHECKBOX_SIZE * 4;
+    int y = UI_MENU_TEXT_Y;
+    if (y < 0) {
+      y = 0;
     }
-    GRect text_bounds = GRect(UI_CELL_MARGIN, UI_MENU_TEXT_Y, bounds.size.w - TASK_CHECKBOX_SIZE * 4, th);
-    graphics_draw_text(ctx, title, fonts_get_system_font(UI_MENU_FONT_KEY), text_bounds,
-                       GTextOverflowModeTrailingEllipsis, GTextAlignmentLeft, round_flow);
+    GSize tsz = graphics_text_layout_get_content_size_with_attributes(
+        title, title_font, GRect(0, 0, avail_w, 500), GTextOverflowModeTrailingEllipsis,
+        GTextAlignmentLeft, round_flow);
+    int title_h = tsz.h;
+    if (title_h < 1) {
+      title_h = 1;
+    }
+    GRect title_bounds = GRect(UI_CELL_MARGIN, y, avail_w, title_h);
+    graphics_draw_text(ctx, title, title_font, title_bounds, GTextOverflowModeTrailingEllipsis,
+                       GTextAlignmentLeft, round_flow);
+    if (due && due[0]) {
+      graphics_context_set_text_color(ctx, hi ? theme_highlight_text() : theme_menu_subtle_text());
+      GSize dsz = graphics_text_layout_get_content_size_with_attributes(
+          due, due_font, GRect(0, 0, avail_w, 500), GTextOverflowModeTrailingEllipsis,
+          GTextAlignmentLeft, round_flow);
+      int due_h = dsz.h;
+      if (due_h < 1) {
+        due_h = 1;
+      }
+      GRect due_bounds =
+          GRect(UI_CELL_MARGIN, y + title_h + UI_TASK_DUE_GAP, avail_w, due_h);
+      graphics_draw_text(ctx, due, due_font, due_bounds, GTextOverflowModeTrailingEllipsis,
+                         GTextAlignmentLeft, round_flow);
+      graphics_context_set_text_color(ctx, hi ? theme_highlight_text() : theme_text());
+    }
   }
 #else
   {
     int left_text = UI_CELL_MARGIN + TASK_CHECKBOX_SIZE + UI_CELL_MARGIN;
-    int th = bounds.size.h - UI_MENU_TEXT_Y;
-    if (th < 1) {
-      th = bounds.size.h;
+    int avail_w = bounds.size.w - left_text - UI_CELL_MARGIN;
+    int y = UI_MENU_TEXT_Y;
+    if (y < 0) {
+      y = 0;
     }
-    GRect text_bounds =
-        GRect(left_text, UI_MENU_TEXT_Y, bounds.size.w - left_text - UI_CELL_MARGIN, th);
-    graphics_draw_text(ctx, title, fonts_get_system_font(UI_MENU_FONT_KEY), text_bounds,
-                     GTextOverflowModeTrailingEllipsis, GTextAlignmentLeft, NULL);
+    GSize tsz = graphics_text_layout_get_content_size_with_attributes(
+        title, title_font, GRect(0, 0, avail_w, 500), GTextOverflowModeTrailingEllipsis,
+        GTextAlignmentLeft, NULL);
+    int title_h = tsz.h;
+    if (title_h < 1) {
+      title_h = 1;
+    }
+    GRect title_bounds = GRect(left_text, y, avail_w, title_h);
+    graphics_draw_text(ctx, title, title_font, title_bounds, GTextOverflowModeTrailingEllipsis,
+                       GTextAlignmentLeft, NULL);
+    if (due && due[0]) {
+      graphics_context_set_text_color(ctx, hi ? theme_highlight_text() : theme_menu_subtle_text());
+      GSize dsz = graphics_text_layout_get_content_size_with_attributes(
+          due, due_font, GRect(0, 0, avail_w, 500), GTextOverflowModeTrailingEllipsis,
+          GTextAlignmentLeft, NULL);
+      int due_h = dsz.h;
+      if (due_h < 1) {
+        due_h = 1;
+      }
+      GRect due_bounds =
+          GRect(left_text, y + title_h + UI_TASK_DUE_GAP, avail_w, due_h);
+      graphics_draw_text(ctx, due, due_font, due_bounds, GTextOverflowModeTrailingEllipsis,
+                         GTextAlignmentLeft, NULL);
+      graphics_context_set_text_color(ctx, hi ? theme_highlight_text() : theme_text());
+    }
   }
 #endif
 

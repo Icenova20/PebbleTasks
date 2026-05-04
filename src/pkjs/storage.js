@@ -36,6 +36,26 @@ function truncate(s) {
   return s;
 }
 
+var ShortMonths = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+/** YYYY-MM-DD → "mon dd, yyyy" for watch subtitle (pkjs only; watch shows string as-is). */
+function formatDueForWatch(isoYmd) {
+  if (!isoYmd || typeof isoYmd !== 'string') {
+    return '';
+  }
+  var m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(isoYmd);
+  if (!m) {
+    return isoYmd;
+  }
+  var year = m[1];
+  var mon = parseInt(m[2], 10) - 1;
+  var day = parseInt(m[3], 10);
+  if (mon < 0 || mon > 11) {
+    return isoYmd;
+  }
+  return SHORT_MONTHS[mon] + ' ' + day + ', ' + year;
+}
+
 function getOpenTasksInOrder(list) {
   var out = [];
   if (!list || !Array.isArray(list.tasks)) {
@@ -83,6 +103,7 @@ module.exports = {
   saveData: saveData,
   normalizeLine: normalizeLine,
   truncate: truncate,
+  formatDueForWatch: formatDueForWatch,
   getOpenTasksInOrder: getOpenTasksInOrder,
   getCompletedTasksInOrder: getCompletedTasksInOrder,
   countCompletedTasks: countCompletedTasks,

@@ -196,6 +196,27 @@ function patchTaskNeedsActionAsync(accessToken, taskListId, taskId, callback) {
   httpJsonAsync('PATCH', url, accessToken, { status: 'needsAction' }, callback);
 }
 
+/** Due is date-only in Tasks API; send RFC 3339 midnight UTC. */
+function patchTaskDueAsync(accessToken, taskListId, taskId, dueIsoMidnightUtc, callback) {
+  var url =
+    API +
+    '/lists/' +
+    encodeURIComponent(taskListId) +
+    '/tasks/' +
+    encodeURIComponent(taskId);
+  httpJsonAsync('PATCH', url, accessToken, { due: dueIsoMidnightUtc }, callback);
+}
+
+function patchTaskClearDueAsync(accessToken, taskListId, taskId, callback) {
+  var url =
+    API +
+    '/lists/' +
+    encodeURIComponent(taskListId) +
+    '/tasks/' +
+    encodeURIComponent(taskId);
+  httpJsonAsync('PATCH', url, accessToken, { due: null }, callback);
+}
+
 function deleteTaskAsync(accessToken, taskListId, taskId, callback) {
   var url =
     API +
@@ -221,6 +242,8 @@ module.exports = {
   insertTaskAsync: insertTaskAsync,
   patchTaskCompleteAsync: patchTaskCompleteAsync,
   patchTaskNeedsActionAsync: patchTaskNeedsActionAsync,
+  patchTaskDueAsync: patchTaskDueAsync,
+  patchTaskClearDueAsync: patchTaskClearDueAsync,
   deleteTaskAsync: deleteTaskAsync,
   clearCompletedAsync: clearCompletedAsync,
 };

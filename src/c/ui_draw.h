@@ -12,5 +12,5 @@ void ui_draw_menu_leading_icon_row(GContext *ctx, const Layer *cell_layer, const
 void ui_draw_add_labeled_row(GContext *ctx, const Layer *cell_layer, bool is_task_list,
                             GTextAttributes *round_attr);
 void ui_draw_tasks_checkbox_frame(GContext *ctx, const Layer *cell_layer);
-void ui_draw_tasks_open_cell(GContext *ctx, const Layer *cell_layer, const char *title,
+void ui_draw_tasks_open_cell(GContext *ctx, const Layer *cell_layer, const char *title, const char *due,
                              GTextAttributes *round_flow);

@@ -31,9 +31,17 @@ function openAndFlagAsync(accessToken, listIx, done) {
       return;
     }
     api.listOpenTasksSortedAsync(accessToken, tlId, function (open) {
+      var isoDateRe = /^\d{4}-\d{2}-\d{2}$/;
       var lineStr = open
         .map(function (t) {
-          return storage.truncate(t.title || '');
+          var title = storage.truncate(t.title || '');
+          if (t && t.due) {
+            var day = String(t.due).substring(0, 10);
+            if (isoDateRe.test(day)) {
+              title += '\x1F' + storage.formatDueForWatch(day);
+            }
+          }
+          return title;
         })
         .join('\n');
       api.listCompletedTasksSortedAsync(accessToken, tlId, function (comp) {
@@ -72,6 +80,8 @@ function replyEmptyForCmd(cmd, listIx) {
   } else if (cmd === protocol.CMD_W_UNCOMPLETE_COMPLETED) {
     messaging.replyOpenTaskLinesForList(listIx, '', 0);
     messaging.replyCompletedTaskLinesForList(listIx, '');
+  } else if (cmd === protocol.CMD_W_SET_TASK_DUE || cmd === protocol.CMD_W_CLEAR_TASK_DUE) {
+    messaging.replyOpenTaskLinesForList(listIx, '', 0);
   } else {
     messaging.replyListsWithText('');
     messaging.replyOpenTaskLinesForList(listIx, '', 0);
@@ -293,6 +303,56 @@ function dispatch(cmd, listIx, taskIx, text) {
                 messaging.replyOpenTaskLinesForList(listIx, o5.text, o5.hasComp);
                 messaging.replyCompletedTaskLinesForList(listIx, compL);
               });
+            });
+          });
+        });
+        return;
+      }
+
+      if (cmd === protocol.CMD_W_SET_TASK_DUE) {
+        var dueDay = storage.normalizeLine(text);
+        if (!tlId || !/^\d{4}-\d{2}-\d{2}$/.test(dueDay)) {
+          openAndFlagAsync(t, listIx, function (ox) {
+            messaging.replyOpenTaskLinesForList(listIx, ox.text, ox.hasComp);
+          });
+          return;
+        }
+        api.listOpenTasksSortedAsync(t, tlId, function (openT) {
+          if (taskIx < 0 || taskIx >= openT.length) {
+            openAndFlagAsync(t, listIx, function (ox) {
+              messaging.replyOpenTaskLinesForList(listIx, ox.text, ox.hasComp);
+            });
+            return;
+          }
+          var iso = dueDay + 'T00:00:00.000Z';
+          api.patchTaskDueAsync(t, tlId, openT[taskIx].id, iso, function () {
+            var t2 = auth.getValidAccessToken() || token;
+            openAndFlagAsync(t2, listIx, function (ox) {
+              messaging.replyOpenTaskLinesForList(listIx, ox.text, ox.hasComp);
+            });
+          });
+        });
+        return;
+      }
+
+      if (cmd === protocol.CMD_W_CLEAR_TASK_DUE) {
+        if (!tlId) {
+          openAndFlagAsync(t, listIx, function (ox) {
+            messaging.replyOpenTaskLinesForList(listIx, ox.text, ox.hasComp);
+          });
+          return;
+        }
+        api.listOpenTasksSortedAsync(t, tlId, function (openT) {
+          if (taskIx < 0 || taskIx >= openT.length) {
+            openAndFlagAsync(t, listIx, function (ox) {
+              messaging.replyOpenTaskLinesForList(listIx, ox.text, ox.hasComp);
+            });
+            return;
+          }
+          api.patchTaskClearDueAsync(t, tlId, openT[taskIx].id, function () {
+            var t2 = auth.getValidAccessToken() || token;
+            openAndFlagAsync(t2, listIx, function (ox) {
+              messaging.replyOpenTaskLinesForList(listIx, ox.text, ox.hasComp);
             });
           });
         });

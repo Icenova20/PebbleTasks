@@ -1,8 +1,10 @@
 #include "theme.h"
 
 #include "completed_menu.h"
+#include "due_wizard.h"
 #include "main_menu.h"
 #include "messaging.h"
+#include "task_action_menu.h"
 #include "tasks_menu.h"
 #include "ui_loading.h"
 #include "ui_toast.h"
@@ -93,6 +95,8 @@ void theme_apply_all(void) {
   main_menu_apply_theme();
   tasks_menu_apply_theme();
   completed_menu_apply_theme();
+  task_action_menu_apply_theme();
+  due_wizard_apply_theme();
   ui_toast_apply_theme();
   ui_loading_invalidate();
 }

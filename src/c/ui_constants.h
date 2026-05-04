@@ -11,6 +11,8 @@
 #define TASK_CHECKBOX_SIZE 12
 /** List lines — PebbleChecklist: FONT_KEY_GOTHIC_24_BOLD (checklist_window). */
 #define UI_MENU_FONT_KEY FONT_KEY_GOTHIC_24_BOLD
+#define UI_TASK_DUE_FONT_KEY FONT_KEY_GOTHIC_18
+#define UI_TASK_DUE_GAP 2
 /* Subtle vertical nudge (Playback LIST_TITLE_Y) so one-line text sits in the cell optical center. */
 #define UI_MENU_TEXT_Y PBL_IF_ROUND_ELSE(0, -1)
 #define UI_TOAST_HEIGHT 36

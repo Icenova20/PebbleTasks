@@ -65,8 +65,13 @@ function replyOpenTaskLines(listIndex) {
   }
   var list = d.lists[listIndex];
   var open = storage.getOpenTasksInOrder(list);
+  var isoDateRe = /^\d{4}-\d{2}-\d{2}$/;
   var lines = open.map(function (t) {
-    return storage.truncate(t.text);
+    var line = storage.truncate(t.text);
+    if (t && t.due && isoDateRe.test(String(t.due))) {
+      line += '\x1F' + storage.formatDueForWatch(String(t.due));
+    }
+    return line;
   });
   var hasComp = storage.countCompletedTasks(list) > 0 ? 1 : 0;
   sendToWatch({ 0: protocol.R_OPEN_TASKS, 1: listIndex, 3: lines.join(lineSep), 4: hasComp });
