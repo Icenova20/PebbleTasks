@@ -24,7 +24,7 @@ function linesFromListArray(lists) {
 }
 
 function openAndFlagAsync(accessToken, listIx, done) {
-  api.listTaskListsSortedAsync(accessToken, function (lists) {
+  api.listTaskListsAsync(accessToken, function (lists) {
     var tlId = api.taskListIdFromLists(lists, listIx);
     if (!tlId) {
       done({ text: '', hasComp: 0 });
@@ -52,7 +52,7 @@ function openAndFlagAsync(accessToken, listIx, done) {
 }
 
 function completedLinesAsync(accessToken, listIx, done) {
-  api.listTaskListsSortedAsync(accessToken, function (lists) {
+  api.listTaskListsAsync(accessToken, function (lists) {
     var tlId = api.taskListIdFromLists(lists, listIx);
     if (!tlId) {
       done('');
@@ -96,7 +96,7 @@ function dispatch(cmd, listIx, taskIx, text) {
     }
 
     if (cmd === protocol.CMD_W_ASK_LISTS) {
-      api.listTaskListsSortedAsync(token, function (lists) {
+      api.listTaskListsAsync(token, function (lists) {
         messaging.replyListsWithText(linesFromListArray(lists));
       });
       return;
@@ -118,7 +118,7 @@ function dispatch(cmd, listIx, taskIx, text) {
       var name = storage.normalizeLine(text);
       var afterAdd = function () {
         var t2 = auth.getValidAccessToken() || token;
-        api.listTaskListsSortedAsync(t2, function (lists) {
+        api.listTaskListsAsync(t2, function (lists) {
           messaging.replyListsWithText(linesFromListArray(lists));
         });
       };
@@ -133,26 +133,26 @@ function dispatch(cmd, listIx, taskIx, text) {
     }
 
     if (cmd === protocol.CMD_W_DELETE_LIST) {
-      api.listTaskListsSortedAsync(token, function (lists) {
+      api.listTaskListsAsync(token, function (lists) {
         var tlDel = api.taskListIdFromLists(lists, listIx);
         if (tlDel) {
           api.deleteTaskListAsync(token, tlDel, function () {
             var t2 = auth.getValidAccessToken() || token;
-            api.listTaskListsSortedAsync(t2, function (lists2) {
+            api.listTaskListsAsync(t2, function (lists2) {
               messaging.replyListsWithText(linesFromListArray(lists2));
             });
           });
           return;
         }
         var t3 = auth.getValidAccessToken() || token;
-        api.listTaskListsSortedAsync(t3, function (lists3) {
+        api.listTaskListsAsync(t3, function (lists3) {
           messaging.replyListsWithText(linesFromListArray(lists3));
         });
       });
       return;
     }
 
-    api.listTaskListsSortedAsync(token, function (lists) {
+    api.listTaskListsAsync(token, function (lists) {
       var tlId = api.taskListIdFromLists(lists, listIx);
       var t = auth.getValidAccessToken() || token;
 

@@ -53,7 +53,7 @@ function formatDueForWatch(isoYmd) {
   if (mon < 0 || mon > 11) {
     return isoYmd;
   }
-  return SHORT_MONTHS[mon] + ' ' + day + ', ' + year;
+  return ShortMonths[mon] + ' ' + day + ', ' + year;
 }
 
 function getOpenTasksInOrder(list) {

@@ -72,18 +72,14 @@ function sortTasksByPosition(items) {
   });
 }
 
-function listTaskListsSortedAsync(accessToken, callback) {
+function listTaskListsAsync(accessToken, callback) {
   httpJsonAsync('GET', API + '/users/@me/lists', accessToken, null, function (res) {
     if (res.status !== 200 || !res.json) {
       callback([]);
       return;
     }
     var items = res.json.items || [];
-    callback(
-      items.slice().sort(function (a, b) {
-        return cmpString16(a.title, b.title);
-      })
-    );
+    callback(items.slice());
   });
 }
 
@@ -233,7 +229,7 @@ function clearCompletedAsync(accessToken, taskListId, callback) {
 }
 
 module.exports = {
-  listTaskListsSortedAsync: listTaskListsSortedAsync,
+  listTaskListsAsync: listTaskListsAsync,
   taskListIdFromLists: taskListIdFromLists,
   listOpenTasksSortedAsync: listOpenTasksSortedAsync,
   listCompletedTasksSortedAsync: listCompletedTasksSortedAsync,
