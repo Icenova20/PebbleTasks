@@ -1,6 +1,25 @@
 var protocol = require('./protocol');
 var storage = require('./storage');
 var messaging = require('./messaging');
+var timeline = require('./timeline');
+
+var DAY_MS = 86400000;
+
+/** Pebble enforces -2d to +1y on pin.time (see timeline public API). */
+function isPinInstantWithinPebbleRange(timeIsoZ) {
+  var pinT = Date.parse(String(timeIsoZ));
+  if (isNaN(pinT)) {
+    return false;
+  }
+  var now = Date.now();
+  if (pinT < now - 2 * DAY_MS) {
+    return false;
+  }
+  if (pinT > now + 365 * DAY_MS) {
+    return false;
+  }
+  return true;
+}
 
 function dispatch(cmd, listIx, taskIx, text) {
   var d;
@@ -136,6 +155,51 @@ function dispatch(cmd, listIx, taskIx, text) {
       storage.saveData(d);
     }
     messaging.replyLists();
+  } else if (cmd === protocol.CMD_W_PIN_TASK) {
+    d = storage.loadData();
+    if (listIx < 0 || listIx >= d.lists.length) {
+      messaging.replyToast('Task not found');
+      return;
+    }
+    var listPin = d.lists[listIx];
+    var openPin = storage.getOpenTasksInOrder(listPin);
+    if (taskIx < 0 || taskIx >= openPin.length) {
+      messaging.replyToast('Task not found');
+      return;
+    }
+    var taskPin = openPin[taskIx];
+    var fromWatch = text != null ? String(text).trim() : '';
+    var timeIso = '';
+    if (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$/.test(fromWatch)) {
+      timeIso = fromWatch;
+    } else {
+      var duePin = taskPin && taskPin.due ? storage.extractDueYmd(taskPin.due) : '';
+      if (!duePin) {
+        messaging.replyToast('Set due first');
+        return;
+      }
+      timeIso = duePin + 'T09:00:00Z';
+    }
+    if (!isPinInstantWithinPebbleRange(timeIso)) {
+      messaging.replyToast('Time out of range');
+      return;
+    }
+    var pinId = timeline.newPinId('l');
+    var subtitle = listPin && listPin.name ? String(listPin.name) : '';
+    var pin = timeline.buildTaskPin(pinId, taskPin.text, timeIso, subtitle);
+    timeline.getTimelineTokenAsync(function (token) {
+      if (!token) {
+        messaging.replyToast('Timeline not enabled');
+        return;
+      }
+      timeline.pushPin(token, pin, function (ok) {
+        if (ok) {
+          messaging.replyToast('Pinned');
+        } else {
+          messaging.replyToast('Timeline error');
+        }
+      });
+    });
   }
 }
 

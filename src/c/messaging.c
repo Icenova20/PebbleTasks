@@ -8,6 +8,7 @@
 #include "ui_toast.h"
 
 #include <message_keys.auto.h>
+#include <string.h>
 
 void messaging_send(int cmd, int32_t list_index, int32_t task_index, const char *text) {
   DictionaryIterator *it;
@@ -105,5 +106,13 @@ void messaging_inbox_received(DictionaryIterator *it, void *context) {
   } else if (cmd == R_COMPLETED_TASKS) {
     completed_menu_reload_from_payload_if_visible(text, li);
     ui_loading_stop();
+  } else if (cmd == R_TOAST) {
+    if (text && text[0]) {
+      /* TextLayer does not copy strings; persist the toast message in static storage. */
+      static char s_toast_buf[64];
+      strncpy(s_toast_buf, text, sizeof(s_toast_buf) - 1);
+      s_toast_buf[sizeof(s_toast_buf) - 1] = '\0';
+      ui_toast_show(s_toast_buf);
+    }
   }
 }

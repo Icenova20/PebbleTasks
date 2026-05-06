@@ -7,6 +7,7 @@
 #include "task_action_menu.h"
 #include "task_full_view.h"
 #include "tasks_menu.h"
+#include "timeline_pin_wizard.h"
 #include "ui_loading.h"
 #include "ui_toast.h"
 
@@ -123,6 +124,7 @@ void theme_apply_all(void) {
   task_action_menu_apply_theme();
   task_full_view_apply_theme();
   due_wizard_apply_theme();
+  timeline_pin_wizard_apply_theme();
   ui_toast_apply_theme();
   ui_loading_invalidate();
 }

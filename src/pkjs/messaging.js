@@ -65,11 +65,13 @@ function replyOpenTaskLines(listIndex) {
   }
   var list = d.lists[listIndex];
   var open = storage.getOpenTasksInOrder(list);
-  var isoDateRe = /^\d{4}-\d{2}-\d{2}$/;
   var lines = open.map(function (t) {
     var line = storage.truncate(t.text);
-    if (t && t.due && isoDateRe.test(String(t.due))) {
-      line += '\x1F' + storage.formatDueForWatch(String(t.due));
+    if (t && t.due) {
+      var day = storage.extractDueYmd(t.due);
+      if (day) {
+        line += '\x1F' + day + '\x1F' + storage.formatDueForWatch(day);
+      }
     }
     return line;
   });
@@ -109,6 +111,11 @@ function replyCompletedTaskLinesForList(listIndex, lineText) {
   sendToWatch({ 0: protocol.R_COMPLETED_TASKS, 1: listIndex, 3: lineText || '' });
 }
 
+/** Trigger a transient toast on the watch (R_TOAST handled in messaging.c). */
+function replyToast(text) {
+  sendToWatch({ 0: protocol.R_TOAST, 3: String(text || '') });
+}
+
 module.exports = {
   payloadPick: payloadPick,
   sendToWatch: sendToWatch,
@@ -119,4 +126,5 @@ module.exports = {
   replyOpenTaskLinesForList: replyOpenTaskLinesForList,
   replyCompletedTaskLines: replyCompletedTaskLines,
   replyCompletedTaskLinesForList: replyCompletedTaskLinesForList,
+  replyToast: replyToast,
 };

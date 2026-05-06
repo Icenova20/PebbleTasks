@@ -23,6 +23,8 @@ static Layer *s_tasks_clock;
 static int s_tasks_num_rows;
 static char *s_tasks_titles[MAX_MENU_LINES + 1];
 static char *s_tasks_due[MAX_MENU_LINES + 1];
+/** Machine-readable YYYY-MM-DD when phone sends title\x1Fiso\x1Fdisplay; else NULL. */
+static char *s_tasks_due_iso[MAX_MENU_LINES + 1];
 static int s_tasks_open_count;
 static bool s_tasks_show_completed_nav;
 static int s_current_list_index;
@@ -127,8 +129,8 @@ static void tasks_select_long(MenuLayer *ml, MenuIndex *idx, void *ctx) {
     return;
   }
   if (row > 0 && row <= s_tasks_open_count) {
-    task_action_menu_show(s_current_list_index, row - 1, s_tasks_titles[row],
-                          s_tasks_due[row]);
+    task_action_menu_show(s_current_list_index, row - 1, s_tasks_titles[row], s_tasks_due[row],
+                          s_tasks_due_iso[row]);
   }
 }
 
@@ -187,6 +189,10 @@ static void destroy_tasks_menu_data(void) {
       free(s_tasks_due[i]);
       s_tasks_due[i] = NULL;
     }
+    if (s_tasks_due_iso[i]) {
+      free(s_tasks_due_iso[i]);
+      s_tasks_due_iso[i] = NULL;
+    }
   }
   str_util_free_titles(s_tasks_titles, 1 + open);
   s_tasks_num_rows = 0;
@@ -215,6 +221,7 @@ static void rebuild_tasks_menu_internal(const char *payload, int for_list, bool 
   }
   for (int i = 1; i <= s_tasks_open_count; i++) {
     s_tasks_due[i] = NULL;
+    s_tasks_due_iso[i] = NULL;
     char *line = s_tasks_titles[i];
     if (!line) {
       continue;
@@ -222,7 +229,15 @@ static void rebuild_tasks_menu_internal(const char *payload, int for_list, bool 
     char *p = strchr(line, '\x1F');
     if (p) {
       *p = '\0';
-      s_tasks_due[i] = str_util_strdup(p + 1);
+      char *rest = p + 1;
+      char *p2 = strchr(rest, '\x1F');
+      if (p2) {
+        *p2 = '\0';
+        s_tasks_due_iso[i] = str_util_strdup(rest);
+        s_tasks_due[i] = str_util_strdup(p2 + 1);
+      } else {
+        s_tasks_due[i] = str_util_strdup(rest);
+      }
     }
   }
   if (s_tasks_menu) {

@@ -3,9 +3,27 @@ var api = require('./google_tasks_api');
 var auth = require('./auth_storage');
 var messaging = require('./messaging');
 var storage = require('./storage');
+var timeline = require('./timeline');
 
 var maxListNameForMenu = 64;
 var maxListLines = 7; /* keep joined text under app message + TEXT_BUF(512) limits */
+var DAY_MS = 86400000;
+
+/** Pebble enforces -2d to +1y on pin.time. */
+function isPinInstantWithinPebbleRange(timeIsoZ) {
+  var pinT = Date.parse(String(timeIsoZ));
+  if (isNaN(pinT)) {
+    return false;
+  }
+  var now = Date.now();
+  if (pinT < now - 2 * DAY_MS) {
+    return false;
+  }
+  if (pinT > now + 365 * DAY_MS) {
+    return false;
+  }
+  return true;
+}
 
 function linesFromListArray(lists) {
   var out = [];
@@ -31,14 +49,13 @@ function openAndFlagAsync(accessToken, listIx, done) {
       return;
     }
     api.listOpenTasksSortedAsync(accessToken, tlId, function (open) {
-      var isoDateRe = /^\d{4}-\d{2}-\d{2}$/;
       var lineStr = open
         .map(function (t) {
           var title = storage.truncate(t.title || '');
           if (t && t.due) {
-            var day = String(t.due).substring(0, 10);
-            if (isoDateRe.test(day)) {
-              title += '\x1F' + storage.formatDueForWatch(day);
+            var day = storage.extractDueYmd(t.due);
+            if (day) {
+              title += '\x1F' + day + '\x1F' + storage.formatDueForWatch(day);
             }
           }
           return title;
@@ -82,6 +99,8 @@ function replyEmptyForCmd(cmd, listIx) {
     messaging.replyCompletedTaskLinesForList(listIx, '');
   } else if (cmd === protocol.CMD_W_SET_TASK_DUE || cmd === protocol.CMD_W_CLEAR_TASK_DUE) {
     messaging.replyOpenTaskLinesForList(listIx, '', 0);
+  } else if (cmd === protocol.CMD_W_PIN_TASK) {
+    messaging.replyToast('Sign in to Google');
   } else {
     messaging.replyListsWithText('');
     messaging.replyOpenTaskLinesForList(listIx, '', 0);
@@ -353,6 +372,59 @@ function dispatch(cmd, listIx, taskIx, text) {
             var t2 = auth.getValidAccessToken() || token;
             openAndFlagAsync(t2, listIx, function (ox) {
               messaging.replyOpenTaskLinesForList(listIx, ox.text, ox.hasComp);
+            });
+          });
+        });
+        return;
+      }
+
+      if (cmd === protocol.CMD_W_PIN_TASK) {
+        if (!tlId) {
+          messaging.replyToast('Task not found');
+          return;
+        }
+        api.listOpenTasksSortedAsync(t, tlId, function (openT) {
+          if (taskIx < 0 || taskIx >= openT.length) {
+            messaging.replyToast('Task not found');
+            return;
+          }
+          var taskP = openT[taskIx];
+          var fromWatch = text != null ? String(text).trim() : '';
+          var timeIso = '';
+          if (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$/.test(fromWatch)) {
+            timeIso = fromWatch;
+          } else {
+            var dueP = taskP && taskP.due ? storage.extractDueYmd(taskP.due) : '';
+            if (!dueP) {
+              messaging.replyToast('Set due first');
+              return;
+            }
+            timeIso = dueP + 'T09:00:00Z';
+          }
+          if (!isPinInstantWithinPebbleRange(timeIso)) {
+            messaging.replyToast('Time out of range');
+            return;
+          }
+          var pinId = timeline.newPinId('g');
+          var listName = '';
+          for (var li = 0; li < lists.length; li++) {
+            if (api.taskListIdFromLists(lists, li) === tlId) {
+              listName = (lists[li] && lists[li].title) || '';
+              break;
+            }
+          }
+          var pin = timeline.buildTaskPin(pinId, taskP.title || '', timeIso, listName);
+          timeline.getTimelineTokenAsync(function (timelineToken) {
+            if (!timelineToken) {
+              messaging.replyToast('Timeline not enabled');
+              return;
+            }
+            timeline.pushPin(timelineToken, pin, function (ok) {
+              if (ok) {
+                messaging.replyToast('Pinned');
+              } else {
+                messaging.replyToast('Timeline error');
+              }
             });
           });
         });

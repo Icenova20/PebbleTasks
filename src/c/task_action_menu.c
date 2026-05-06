@@ -6,6 +6,7 @@
 #include "task_full_view.h"
 #include "theme.h"
 #include "ui_clock_bar.h"
+#include "timeline_pin_wizard.h"
 
 #include <pebble.h>
 #include <stdlib.h>
@@ -29,28 +30,32 @@ static int s_list_ix;
 static int s_task_ix;
 static char *s_saved_title;
 static char *s_saved_due;
+static char *s_saved_due_iso;
 
 static void clear_saved_strings(void) {
   free(s_saved_title);
   s_saved_title = NULL;
   free(s_saved_due);
   s_saved_due = NULL;
+  free(s_saved_due_iso);
+  s_saved_due_iso = NULL;
 }
 
 static uint16_t action_get_rows(MenuLayer *ml, uint16_t section, void *ctx) {
   (void)ml;
   (void)section;
   (void)ctx;
-  return 5;
+  return 6;
 }
 
 static void action_draw_row(GContext *ctx, const Layer *cell_layer, MenuIndex *idx, void *cb_ctx) {
   (void)cb_ctx;
   const char *titles[] = {
-      "View full task", "Mark complete", "Due date…", "Clear due", "Delete task",
+      "View full task", "Mark complete", "Due date…",
+      "Clear due",      "Add to timeline", "Delete task",
   };
   int i = idx->row;
-  if (i < 0 || i > 4) {
+  if (i < 0 || i > 5) {
     return;
   }
   menu_cell_basic_draw(ctx, cell_layer, titles[i], NULL, NULL);
@@ -79,6 +84,10 @@ static void action_select(MenuLayer *ml, MenuIndex *idx, void *ctx) {
   }
   if (row == 3) {
     messaging_send(CMD_W_CLEAR_TASK_DUE, li, ti, NULL);
+    return;
+  }
+  if (row == 4) {
+    timeline_pin_wizard_push(li, ti, s_saved_due_iso);
     return;
   }
   messaging_send(CMD_W_DELETE_TASK, li, ti, NULL);
@@ -133,7 +142,8 @@ static void action_unload(Window *w) {
 }
 
 void task_action_menu_show(int list_index, int task_index, const char *task_title,
-                           const char *task_due_or_null) {
+                           const char *task_due_display_or_null,
+                           const char *task_due_iso_yyyy_mm_dd_or_null) {
   s_list_ix = list_index;
   s_task_ix = task_index;
   if (s_win) {
@@ -144,8 +154,11 @@ void task_action_menu_show(int list_index, int task_index, const char *task_titl
   if (!s_saved_title) {
     return;
   }
-  if (task_due_or_null && task_due_or_null[0]) {
-    s_saved_due = duplicate_cstr(task_due_or_null);
+  if (task_due_display_or_null && task_due_display_or_null[0]) {
+    s_saved_due = duplicate_cstr(task_due_display_or_null);
+  }
+  if (task_due_iso_yyyy_mm_dd_or_null && task_due_iso_yyyy_mm_dd_or_null[0]) {
+    s_saved_due_iso = duplicate_cstr(task_due_iso_yyyy_mm_dd_or_null);
   }
   s_win = window_create();
   window_set_window_handlers(s_win, (WindowHandlers){.load = action_load, .unload = action_unload});

@@ -15,10 +15,12 @@
 #define CMD_W_UNCOMPLETE_COMPLETED 11
 #define CMD_W_SET_TASK_DUE 12
 #define CMD_W_CLEAR_TASK_DUE 13
+#define CMD_W_PIN_TASK 14
 
 #define R_LISTS 20
 #define R_OPEN_TASKS 21
 #define R_COMPLETED_TASKS 22
+#define R_TOAST 23
 
 #define MAX_MENU_LINES 20
 #define TEXT_BUF 512

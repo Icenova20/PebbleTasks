@@ -38,6 +38,26 @@ function truncate(s) {
 
 var ShortMonths = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
+/**
+ * Normalize any stored due (plain YYYY-MM-DD or RFC3339 from APIs) to YYYY-MM-DD,
+ * or '' if no calendar date can be read.
+ */
+function extractDueYmd(dueRaw) {
+  if (dueRaw === undefined || dueRaw === null || dueRaw === '') {
+    return '';
+  }
+  var s = String(dueRaw).trim();
+  if (/^\d{4}-\d{2}-\d{2}$/.test(s)) {
+    return s;
+  }
+  var head = s.length >= 10 ? s.substring(0, 10) : '';
+  if (/^\d{4}-\d{2}-\d{2}$/.test(head)) {
+    return head;
+  }
+  var m = /(\d{4}-\d{2}-\d{2})/.exec(s);
+  return m ? m[1] : '';
+}
+
 /** YYYY-MM-DD → "mon dd, yyyy" for watch subtitle (pkjs only; watch shows string as-is). */
 function formatDueForWatch(isoYmd) {
   if (!isoYmd || typeof isoYmd !== 'string') {
@@ -103,6 +123,7 @@ module.exports = {
   saveData: saveData,
   normalizeLine: normalizeLine,
   truncate: truncate,
+  extractDueYmd: extractDueYmd,
   formatDueForWatch: formatDueForWatch,
   getOpenTasksInOrder: getOpenTasksInOrder,
   getCompletedTasksInOrder: getCompletedTasksInOrder,
