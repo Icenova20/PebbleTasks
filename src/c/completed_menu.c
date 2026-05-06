@@ -6,8 +6,7 @@
 #include "ui_assets.h"
 #include "theme.h"
 #include "ui_clock_bar.h"
-#include "ui_constants.h"
-#include "ui_draw.h"
+#include "ui_menu_wrap_cell.h"
 #include "ui_loading.h"
 #include "ui_toast.h"
 
@@ -16,7 +15,6 @@ static MenuLayer *s_completed_menu;
 #ifndef PBL_ROUND
 static Layer *s_completed_clock;
 #endif
-static GTextAttributes *s_completed_text_attr;
 static int s_completed_num_rows;
 static char *s_completed_titles[MAX_MENU_LINES + 1];
 static int s_completed_line_count;
@@ -38,22 +36,26 @@ static void completed_draw_row(GContext *ctx, const Layer *cell_layer, MenuIndex
     return;
   }
   if (idx->row == 0) {
-    ui_draw_menu_leading_icon_row(ctx, cell_layer, ui_assets_trash(), "Clear all", false, s_completed_text_attr);
+    menu_cell_basic_draw(ctx, cell_layer, "Clear all", NULL, (GBitmap *)(void *)ui_assets_trash());
     return;
   }
   if (!s_completed_titles[idx->row]) {
     return;
   }
-  ui_draw_menu_title_row(ctx, cell_layer, s_completed_titles[idx->row], false, s_completed_text_attr);
+  ui_menu_wrap_cell_draw(ctx, cell_layer, s_completed_menu, idx, s_completed_titles[idx->row], NULL, NULL);
 }
 
 static int16_t completed_get_height(MenuLayer *ml, MenuIndex *idx, void *ctx) {
   (void)ml;
   (void)ctx;
-  if (idx->row >= s_completed_num_rows) {
-    return UI_CELL_MIN;
+  Layer *wl = window_get_root_layer(s_completed_window);
+  if (idx->row == 0) {
+    return ui_menu_wrap_cell_measure_height(wl, "Clear all", NULL);
   }
-  return UI_CELL_MIN;
+  if (idx->row >= s_completed_num_rows || !s_completed_titles[idx->row]) {
+    return ui_menu_wrap_cell_measure_height(wl, " ", NULL);
+  }
+  return ui_menu_wrap_cell_measure_height(wl, s_completed_titles[idx->row], NULL);
 }
 
 static void completed_select(MenuLayer *ml, MenuIndex *idx, void *ctx) {
@@ -101,11 +103,6 @@ static void setup_completed_menu_ui(Window *window) {
 
   window_set_background_color(window, theme_bg());
 
-  s_completed_text_attr = graphics_text_attributes_create();
-#ifdef PBL_ROUND
-  graphics_text_attributes_enable_screen_text_flow(s_completed_text_attr, UI_CELL_MARGIN * 2);
-#endif
-
   s_completed_menu = menu_layer_create(menu_bounds);
   menu_layer_set_click_config_onto_window(s_completed_menu, window);
   menu_layer_set_center_focused(s_completed_menu, PBL_IF_ROUND_ELSE(true, false));
@@ -119,7 +116,7 @@ static void setup_completed_menu_ui(Window *window) {
           .select_long_click = completed_select_long,
       });
   menu_layer_set_normal_colors(s_completed_menu, theme_bg(), theme_text());
-  menu_layer_set_highlight_colors(s_completed_menu, theme_highlight_bg(), theme_highlight_text());
+  menu_layer_set_highlight_colors(s_completed_menu, theme_menu_highlight_bg(), theme_menu_highlight_text());
 
   layer_add_child(window_layer, menu_layer_get_layer(s_completed_menu));
 
@@ -140,10 +137,6 @@ static void destroy_completed_menu_layers(void) {
     s_completed_clock = NULL;
   }
 #endif
-  if (s_completed_text_attr) {
-    graphics_text_attributes_destroy(s_completed_text_attr);
-    s_completed_text_attr = NULL;
-  }
 }
 
 static void destroy_completed_menu_data(void) {
@@ -225,7 +218,7 @@ void completed_menu_apply_theme(void) {
   window_set_background_color(s_completed_window, theme_bg());
   if (s_completed_menu) {
     menu_layer_set_normal_colors(s_completed_menu, theme_bg(), theme_text());
-    menu_layer_set_highlight_colors(s_completed_menu, theme_highlight_bg(), theme_highlight_text());
+    menu_layer_set_highlight_colors(s_completed_menu, theme_menu_highlight_bg(), theme_menu_highlight_text());
     menu_layer_reload_data(s_completed_menu);
   }
 #ifndef PBL_ROUND

@@ -53,8 +53,7 @@ static void loading_draw(Layer *layer, GContext *ctx) {
   graphics_context_set_stroke_width(ctx, LOADING_STROKE_PX);
   draw_arc_clipped(ctx, arc_rect, s_rotation, span);
 
-  /* Match Playback rect overlay: GOTHIC_18_BOLD; B&W = no text AA (same as ui_draw). */
-  graphics_context_set_antialiased(ctx, PBL_IF_BW_ELSE(false, true));
+  graphics_context_set_antialiased(ctx, true);
   GFont font = fonts_get_system_font(FONT_KEY_GOTHIC_18_BOLD);
   GRect text_box = GRect(h_pad, top + w + LOADING_LABEL_GAP, b.size.w - 2 * h_pad, LOADING_TEXT_H);
   graphics_context_set_text_color(ctx, theme_text());

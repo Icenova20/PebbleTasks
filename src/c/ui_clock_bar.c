@@ -20,7 +20,7 @@ static void time_proc(Layer *layer, GContext *ctx) {
   }
 
   graphics_context_set_text_color(ctx, theme_status_fg());
-  graphics_context_set_antialiased(ctx, PBL_IF_BW_ELSE(false, true));
+  graphics_context_set_antialiased(ctx, true);
 
   GFont tfont = fonts_get_system_font(FONT_KEY_GOTHIC_18);
   GFont brand_font = fonts_get_system_font(FONT_KEY_GOTHIC_18);
@@ -48,7 +48,6 @@ static void time_proc(Layer *layer, GContext *ctx) {
 
   GRect br = GRect(b.size.w - 4 - brand_w, 0, brand_w, b.size.h);
   graphics_draw_text(ctx, brand, brand_font, br, GTextOverflowModeTrailingEllipsis, GTextAlignmentRight, NULL);
-  graphics_context_set_antialiased(ctx, PBL_IF_BW_ELSE(true, true));
 }
 
 static void tick(struct tm *tick_time, TimeUnits u) {

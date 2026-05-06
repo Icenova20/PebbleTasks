@@ -127,8 +127,14 @@ static void due_canvas_update(Layer *layer, GContext *ctx) {
   /* Equal thirds */
   int box_w = (inner_w - 2 * gap) / 3;
 
+#ifdef PBL_COLOR
   GColor inactive_bg = theme_toast_bg();
-  GColor inactive_fg = theme_text();
+  GColor inactive_digit = GColorLightGray;
+#else
+  /* BW: inactive pills must not share the same fill as selected (both were white). */
+  GColor inactive_bg = GColorDarkGray;
+  GColor inactive_digit = theme_text();
+#endif
 
   char buf[8];
   for (int i = 0; i < 3; i++) {
@@ -136,7 +142,7 @@ static void due_canvas_update(Layer *layer, GContext *ctx) {
     bool sel = ((int)s_focus == i);
     graphics_context_set_fill_color(ctx, sel ? theme_highlight_bg() : inactive_bg);
     graphics_fill_rect(ctx, box, 4, GCornersAll);
-    graphics_context_set_text_color(ctx, sel ? theme_highlight_text() : inactive_fg);
+    graphics_context_set_text_color(ctx, sel ? theme_highlight_text() : inactive_digit);
     switch (i) {
       case 0:
         snprintf(buf, sizeof(buf), "%02d", s_month);

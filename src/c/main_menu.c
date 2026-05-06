@@ -5,9 +5,9 @@
 #include "str_util.h"
 #include "tasks_menu.h"
 #include "theme.h"
+#include "ui_assets.h"
 #include "ui_clock_bar.h"
-#include "ui_constants.h"
-#include "ui_draw.h"
+#include "ui_menu_wrap_cell.h"
 #include "ui_loading.h"
 #include "ui_toast.h"
 
@@ -16,7 +16,6 @@ static MenuLayer *s_main_menu;
 #ifndef PBL_ROUND
 static Layer *s_main_clock;
 #endif
-static GTextAttributes *s_main_text_attr;
 static int s_main_num_rows;
 static char *s_main_titles[MAX_MENU_LINES + 1];
 static int s_main_real_list_count;
@@ -50,38 +49,26 @@ static void main_draw_row(GContext *ctx, const Layer *cell_layer, MenuIndex *idx
     return;
   }
   if (idx->row == 0) {
-    ui_draw_add_labeled_row(ctx, cell_layer, true, s_main_text_attr);
+    menu_cell_basic_draw(ctx, cell_layer, "Add list", NULL, (GBitmap *)(void *)ui_assets_add_list());
     return;
   }
   if (!s_main_titles[idx->row]) {
     return;
   }
-  ui_draw_menu_title_row(ctx, cell_layer, s_main_titles[idx->row], false, s_main_text_attr);
+  ui_menu_wrap_cell_draw(ctx, cell_layer, s_main_menu, idx, s_main_titles[idx->row], NULL, NULL);
 }
 
 static int16_t main_get_height(MenuLayer *ml, MenuIndex *idx, void *ctx) {
   (void)ml;
   (void)ctx;
+  Layer *wl = window_get_root_layer(s_main_window);
   if (idx->row == 0) {
-    return (int16_t)UI_ADD_ROW_CELL_H;
+    return ui_menu_wrap_cell_measure_height(wl, "Add list", NULL);
   }
   if (idx->row >= s_main_num_rows || !s_main_titles[idx->row]) {
-    return UI_CELL_MIN;
+    return ui_menu_wrap_cell_measure_height(wl, " ", NULL);
   }
-  Layer *wl = window_get_root_layer(s_main_window);
-  int w = ui_draw_text_cell_width(wl);
-  GSize sz = graphics_text_layout_get_content_size_with_attributes(
-      s_main_titles[idx->row], fonts_get_system_font(UI_MENU_FONT_KEY),
-      GRect(0, 0, w, 500), GTextOverflowModeTrailingEllipsis,
-      PBL_IF_ROUND_ELSE(GTextAlignmentCenter, GTextAlignmentLeft), NULL);
-  int h = sz.h + UI_CELL_MARGIN * 2;
-  if (h < UI_CELL_MIN) {
-    h = UI_CELL_MIN;
-  }
-  if (h > UI_CELL_MAX) {
-    h = UI_CELL_MAX;
-  }
-  return (int16_t)h;
+  return ui_menu_wrap_cell_measure_height(wl, s_main_titles[idx->row], NULL);
 }
 
 static void main_select(MenuLayer *ml, MenuIndex *idx, void *ctx) {
@@ -130,10 +117,6 @@ static void destroy_main_menu_layers(void) {
     s_main_clock = NULL;
   }
 #endif
-  if (s_main_text_attr) {
-    graphics_text_attributes_destroy(s_main_text_attr);
-    s_main_text_attr = NULL;
-  }
 }
 
 static void destroy_main_menu_data(void) {
@@ -154,11 +137,6 @@ static void setup_main_menu_ui(Window *window) {
 
   window_set_background_color(window, theme_bg());
 
-  s_main_text_attr = graphics_text_attributes_create();
-#ifdef PBL_ROUND
-  graphics_text_attributes_enable_screen_text_flow(s_main_text_attr, UI_CELL_MARGIN * 2);
-#endif
-
   s_main_menu = menu_layer_create(menu_bounds);
   menu_layer_set_click_config_onto_window(s_main_menu, window);
   menu_layer_set_center_focused(s_main_menu, PBL_IF_ROUND_ELSE(true, false));
@@ -172,7 +150,7 @@ static void setup_main_menu_ui(Window *window) {
           .select_long_click = main_select_long,
       });
   menu_layer_set_normal_colors(s_main_menu, theme_bg(), theme_text());
-  menu_layer_set_highlight_colors(s_main_menu, theme_highlight_bg(), theme_highlight_text());
+  menu_layer_set_highlight_colors(s_main_menu, theme_menu_highlight_bg(), theme_menu_highlight_text());
 
   layer_add_child(window_layer, menu_layer_get_layer(s_main_menu));
 
@@ -246,7 +224,7 @@ void main_menu_apply_theme(void) {
   window_set_background_color(s_main_window, theme_bg());
   if (s_main_menu) {
     menu_layer_set_normal_colors(s_main_menu, theme_bg(), theme_text());
-    menu_layer_set_highlight_colors(s_main_menu, theme_highlight_bg(), theme_highlight_text());
+    menu_layer_set_highlight_colors(s_main_menu, theme_menu_highlight_bg(), theme_menu_highlight_text());
     menu_layer_reload_data(s_main_menu);
   }
 #ifndef PBL_ROUND
