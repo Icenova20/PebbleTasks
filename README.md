@@ -8,7 +8,7 @@ PebbleTasks keeps your lists on your Pebble: open tasks, mark complete, and move
 📂 Browse task lists and open tasks on the watch
 ✔️ Mark tasks complete from your wrist
 ☁️ Google Tasks sync when you link Google, or 📵 offline local lists when you don’t
-🌙 Dark UI tuned for readability on Pebble screens
+Readable layout on small Pebble screens
 🔐 Sign-in runs in your phone’s normal browser (Safari, Chrome, etc.) — Pebble’s embedded config browser is not used for OAuth; after sign-in you paste a short PEBBLETASKS1… line back into app settings (explained in-app).
 
 🔗 Links

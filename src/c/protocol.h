@@ -1,6 +1,6 @@
 #pragma once
 
-/* Message keys: cmd=0, listIndex=1, taskIndex=2, text=3, hasCompleted=4, themePreset=5 (package.json) */
+/* Message keys: cmd=0, listIndex=1, taskIndex=2, text=3, hasCompleted=4 (package.json) */
 
 #define CMD_W_ASK_LISTS 1
 #define CMD_W_ASK_OPEN 2

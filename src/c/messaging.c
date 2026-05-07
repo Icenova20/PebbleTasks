@@ -3,7 +3,6 @@
 #include "completed_menu.h"
 #include "main_menu.h"
 #include "tasks_menu.h"
-#include "theme.h"
 #include "ui_loading.h"
 #include "ui_toast.h"
 
@@ -78,7 +77,6 @@ const char *messaging_tuple_cstring(const Tuple *t) {
 
 void messaging_inbox_received(DictionaryIterator *it, void *context) {
   (void)context;
-  theme_handle_inbox(it);
   Tuple *tc = dict_find(it, MESSAGE_KEY_cmd);
   if (!tc) {
     return;

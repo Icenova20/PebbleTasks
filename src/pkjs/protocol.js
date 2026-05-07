@@ -1,9 +1,6 @@
 // Mirror src/c/protocol.h and package.json message keys
 
-/** Matches package.json messageKeys.themePreset */
 module.exports = {
-  THEME_PRESET: 5,
-
   CMD_W_ASK_LISTS: 1,
   CMD_W_ASK_OPEN: 2,
   CMD_W_ADD_LIST: 3,

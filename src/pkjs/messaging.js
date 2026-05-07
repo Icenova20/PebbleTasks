@@ -35,18 +35,6 @@ function sendToWatch(dict) {
   );
 }
 
-/** Single dark theme on watch (THEME_NUM_PRESETS 1); kept for API compatibility. */
-function pushThemePreset(presetId) {
-  var n = parseInt(presetId, 10);
-  if (isNaN(n) || n !== 0) {
-    return;
-  }
-  var d = {};
-  d[protocol.THEME_PRESET] = n;
-  d.themePreset = n;
-  Pebble.sendAppMessage(d, function () {}, function () {});
-}
-
 function replyLists() {
   var d = storage.loadData();
   var lines = [];
@@ -118,8 +106,6 @@ function replyToast(text) {
 
 module.exports = {
   payloadPick: payloadPick,
-  sendToWatch: sendToWatch,
-  pushThemePreset: pushThemePreset,
   replyLists: replyLists,
   replyOpenTaskLines: replyOpenTaskLines,
   replyListsWithText: replyListsWithText,

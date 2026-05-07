@@ -14,20 +14,15 @@
             "listIndex": 1,
             "taskIndex": 2,
             "text": 3,
-            "hasCompleted": 4,
-            "themePreset": 5
+            "hasCompleted": 4
         },
         "projectType": "native",
         "resources": {
             "media": [
                 { "type": "png", "name": "ICON_ADD_LIST", "file": "images/icon_add_list.png" },
-                { "type": "png", "name": "ICON_ADD_LIST_W", "file": "images/icon_add_list_w.png" },
                 { "type": "png", "name": "ICON_ADD_TASK", "file": "images/icon_add_task.png" },
-                { "type": "png", "name": "ICON_ADD_TASK_W", "file": "images/icon_add_task_w.png" },
                 { "type": "png", "name": "ICON_COMPLETED", "file": "images/icon_completed.png" },
-                { "type": "png", "name": "ICON_COMPLETED_W", "file": "images/icon_completed_w.png" },
-                { "type": "png", "name": "ICON_TRASH", "file": "images/icon_trash.png" },
-                { "type": "png", "name": "ICON_TRASH_W", "file": "images/icon_trash_w.png" }
+                { "type": "png", "name": "ICON_TRASH", "file": "images/icon_trash.png" }
             ]
         },
         "sdkVersion": "3",
