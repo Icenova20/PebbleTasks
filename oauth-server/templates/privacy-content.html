@@ -9,10 +9,24 @@
   <li>To enable task syncing with Google Tasks when you opt in.</li>
   <li>To return settings and tokens back to the Pebble companion flow.</li>
 </ul>
+<h2>Sharing and disclosure of Google user data</h2>
+<ul>
+  <li>Information from your Google account that we access via OAuth and the Google Tasks API is used <strong>only</strong> to provide Google Tasks sync when you choose that mode.</li>
+  <li>We do not sell Google user data. We do not disclose or transfer it to third parties for advertising, marketing, or unrelated analytics.</li>
+  <li>Google user data may be processed by <strong>Google</strong> (OAuth sign-in and Tasks API calls); delivered to <strong>your phone’s Pebble companion app and watch</strong> as part of the configured flow; and handled by <strong>infrastructure providers</strong> only as needed to transmit HTTPS requests (for example hosting, DNS, and TLS).</li>
+</ul>
 <h2>Data storage</h2>
 <ul>
   <li>Primary token storage is intended to be on the phone companion app.</li>
   <li>This server may temporarily hold OAuth payloads during sign-in handoff.</li>
+</ul>
+<h2>Retention and deletion of Google user data</h2>
+<ul>
+  <li><strong>This helper server does not maintain a database of users or long-lived copies of Google OAuth tokens.</strong> Tokens are processed only to complete sign-in (including refresh exchanges when you use that endpoint). OAuth <code>state</code> values used during sign-in are short-lived and discarded after the callback.</li>
+  <li>We retain Google-related processing only for the time needed to fulfill the purposes described in this policy (sign-in handoff and optional token refresh). When that processing completes, we do not keep your tokens on the server.</li>
+  <li>OAuth tokens and task data synced from Google may remain on your <strong>phone or watch</strong> until you remove them (for example by clearing app data or uninstalling the companion app) or switch away from Google mode.</li>
+  <li>You can disconnect PebbleTasks from your Google account at any time using your <strong>Google account permissions</strong> page (see also “Google account permissions” below).</li>
+  <li>Because we do not host a per-user data store on this server, there is typically <strong>nothing server-side for us to delete</strong> on request. For privacy questions or related requests, you may <strong>open an issue</strong> on the project repository: <a href="https://github.com/shan-srini/PebbleTasks" target="_blank" rel="noopener noreferrer">https://github.com/shan-srini/PebbleTasks</a>. To remove data from your devices or Google’s side, use app storage controls and Google account revocation as described above.</li>
 </ul>
 <h2>Third-party services</h2>
 <p>PebbleTasks depends on third-party services and software (including Google APIs, Rebble/Pebble companion behavior, hosting, DNS, and network providers). Their outages, policy changes, or platform behavior can affect functionality.</p>
