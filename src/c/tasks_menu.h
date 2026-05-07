@@ -12,3 +12,5 @@ int tasks_menu_current_list_index(void);
 void tasks_menu_window_load(Window *w);
 void tasks_menu_window_unload(Window *w);
 void tasks_menu_apply_theme(void);
+/** Call when task action submenu closes so the next task row select is not swallowed. */
+void tasks_menu_cancel_select_suppress(void);

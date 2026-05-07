@@ -2,10 +2,17 @@
 #include "theme.h"
 
 #include <pebble.h>
+#include <stdio.h>
+#include <time.h>
 
 #define MAX_BARS 4
 static Layer *s_bars[MAX_BARS];
 static int s_bar_n;
+
+/** strftime "%b %e" space-pads the day, which reads as an oversized gap after the month. */
+static const char k_month_abbr[12][4] = {
+    "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
+};
 
 static void time_proc(Layer *layer, GContext *ctx) {
   GRect b = layer_get_bounds(layer);
@@ -19,35 +26,46 @@ static void time_proc(Layer *layer, GContext *ctx) {
     return;
   }
 
+  static char dbuf[20];
+  dbuf[0] = '\0';
+  time_t now = time(NULL);
+  struct tm *lt = localtime(&now);
+  if (lt && lt->tm_mon >= 0 && lt->tm_mon < 12) {
+    snprintf(dbuf, sizeof(dbuf), "%s %d", k_month_abbr[lt->tm_mon], lt->tm_mday);
+  }
+
   graphics_context_set_text_color(ctx, theme_status_fg());
   graphics_context_set_antialiased(ctx, true);
 
-  GFont tfont = fonts_get_system_font(FONT_KEY_GOTHIC_18);
-  GFont brand_font = fonts_get_system_font(FONT_KEY_GOTHIC_18);
-  static const char *const brand = "PebbleTasks";
+  GFont bar_font = fonts_get_system_font(FONT_KEY_GOTHIC_18_BOLD);
 
-  /* Reserve right strip for app name; time is left, truncated before overlap. */
-  GSize bsz = graphics_text_layout_get_content_size_with_attributes(
-      brand, brand_font, GRect(0, 0, b.size.w, b.size.h), GTextOverflowModeTrailingEllipsis,
-      GTextAlignmentRight, NULL);
-  int brand_w = bsz.w;
-  if (brand_w < 0) {
-    brand_w = 0;
-  }
-  if (brand_w > b.size.w / 2) {
-    brand_w = b.size.w / 2;
+  int date_w = 0;
+  if (dbuf[0] != '\0') {
+    GSize dsz = graphics_text_layout_get_content_size_with_attributes(
+        dbuf, bar_font, GRect(0, 0, b.size.w, b.size.h), GTextOverflowModeTrailingEllipsis,
+        GTextAlignmentRight, NULL);
+    date_w = (int)dsz.w;
+    if (date_w < 0) {
+      date_w = 0;
+    }
+    if (date_w > b.size.w / 2) {
+      date_w = b.size.w / 2;
+    }
   }
   int gap = 4;
-  int time_w = b.size.w - 8 - brand_w - gap;
+  int time_w = b.size.w - 8 - date_w - gap;
   if (time_w < 20) {
     time_w = b.size.w - 8;
+    date_w = 0;
   }
 
   GRect tr = GRect(4, 0, time_w, b.size.h);
-  graphics_draw_text(ctx, tbuf, tfont, tr, GTextOverflowModeTrailingEllipsis, GTextAlignmentLeft, NULL);
+  graphics_draw_text(ctx, tbuf, bar_font, tr, GTextOverflowModeTrailingEllipsis, GTextAlignmentLeft, NULL);
 
-  GRect br = GRect(b.size.w - 4 - brand_w, 0, brand_w, b.size.h);
-  graphics_draw_text(ctx, brand, brand_font, br, GTextOverflowModeTrailingEllipsis, GTextAlignmentRight, NULL);
+  if (date_w > 0) {
+    GRect dr = GRect(b.size.w - 4 - date_w, 0, date_w, b.size.h);
+    graphics_draw_text(ctx, dbuf, bar_font, dr, GTextOverflowModeTrailingEllipsis, GTextAlignmentRight, NULL);
+  }
 }
 
 static void tick(struct tm *tick_time, TimeUnits u) {
@@ -70,7 +88,7 @@ static void register_bar(Layer *l) {
     s_bars[s_bar_n++] = l;
   }
   if (s_bar_n == 1) {
-    tick_timer_service_subscribe(MINUTE_UNIT, tick);
+    tick_timer_service_subscribe(MINUTE_UNIT | DAY_UNIT, tick);
   }
 }
 

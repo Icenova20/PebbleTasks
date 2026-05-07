@@ -9,6 +9,7 @@
 #include "theme.h"
 #include "ui_assets.h"
 #include "ui_clock_bar.h"
+#include "ui_constants.h"
 #include "ui_menu_wrap_cell.h"
 #include "ui_loading.h"
 #include "ui_toast.h"
@@ -70,20 +71,18 @@ static void tasks_draw_row(GContext *ctx, const Layer *cell_layer, MenuIndex *id
 }
 
 static int16_t tasks_get_height(MenuLayer *ml, MenuIndex *idx, void *ctx) {
-  (void)ml;
   (void)ctx;
-  Layer *wl = window_get_root_layer(s_tasks_window);
   if (idx->row == 0) {
-    return ui_menu_wrap_cell_measure_height(wl, "Add task", NULL);
+    return (int16_t)UI_CELL_MIN_HEIGHT;
   }
   int nav = tasks_completed_nav_row_index();
   if (nav >= 0 && idx->row == nav) {
-    return ui_menu_wrap_cell_measure_height(wl, "Completed", NULL);
+    return (int16_t)UI_CELL_MIN_HEIGHT;
   }
   if (idx->row >= s_tasks_num_rows || !s_tasks_titles[idx->row]) {
-    return ui_menu_wrap_cell_measure_height(wl, " ", NULL);
+    return ui_menu_wrap_cell_measure_height(ml, " ", NULL);
   }
-  return ui_menu_wrap_cell_measure_height(wl, s_tasks_titles[idx->row],
+  return ui_menu_wrap_cell_measure_height(ml, s_tasks_titles[idx->row],
                                           tasks_due_as_subtitle(s_tasks_due[idx->row]));
 }
 
@@ -119,7 +118,6 @@ static void tasks_select(MenuLayer *ml, MenuIndex *idx, void *ctx) {
 static void tasks_select_long(MenuLayer *ml, MenuIndex *idx, void *ctx) {
   (void)ml;
   (void)ctx;
-  s_tasks_suppress_next_select_click = true;
   int row = idx->row;
   if (row == 0) {
     return;
@@ -129,6 +127,7 @@ static void tasks_select_long(MenuLayer *ml, MenuIndex *idx, void *ctx) {
     return;
   }
   if (row > 0 && row <= s_tasks_open_count) {
+    s_tasks_suppress_next_select_click = true;
     task_action_menu_show(s_current_list_index, row - 1, s_tasks_titles[row], s_tasks_due[row],
                           s_tasks_due_iso[row]);
   }
@@ -266,6 +265,8 @@ void tasks_menu_push(int list_index) {
 }
 
 int tasks_menu_current_list_index(void) { return s_current_list_index; }
+
+void tasks_menu_cancel_select_suppress(void) { s_tasks_suppress_next_select_click = false; }
 
 void tasks_menu_window_load(Window *w) {
   (void)w;

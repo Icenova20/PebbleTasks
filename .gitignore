@@ -2,3 +2,4 @@ build/
 pebble-watchface-agent/
 node_modules/
 **.env**
+.lock-waf_darwin_build

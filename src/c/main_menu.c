@@ -1,4 +1,5 @@
 #include "main_menu.h"
+#include "list_action_menu.h"
 #include "messaging.h"
 #include "pebble_tasks.h"
 #include "protocol.h"
@@ -7,6 +8,7 @@
 #include "theme.h"
 #include "ui_assets.h"
 #include "ui_clock_bar.h"
+#include "ui_constants.h"
 #include "ui_menu_wrap_cell.h"
 #include "ui_loading.h"
 #include "ui_toast.h"
@@ -59,16 +61,14 @@ static void main_draw_row(GContext *ctx, const Layer *cell_layer, MenuIndex *idx
 }
 
 static int16_t main_get_height(MenuLayer *ml, MenuIndex *idx, void *ctx) {
-  (void)ml;
   (void)ctx;
-  Layer *wl = window_get_root_layer(s_main_window);
   if (idx->row == 0) {
-    return ui_menu_wrap_cell_measure_height(wl, "Add list", NULL);
+    return (int16_t)UI_CELL_MIN_HEIGHT;
   }
   if (idx->row >= s_main_num_rows || !s_main_titles[idx->row]) {
-    return ui_menu_wrap_cell_measure_height(wl, " ", NULL);
+    return ui_menu_wrap_cell_measure_height(ml, " ", NULL);
   }
-  return ui_menu_wrap_cell_measure_height(wl, s_main_titles[idx->row], NULL);
+  return ui_menu_wrap_cell_measure_height(ml, s_main_titles[idx->row], NULL);
 }
 
 static void main_select(MenuLayer *ml, MenuIndex *idx, void *ctx) {
@@ -96,13 +96,13 @@ static void main_select(MenuLayer *ml, MenuIndex *idx, void *ctx) {
 static void main_select_long(MenuLayer *ml, MenuIndex *idx, void *ctx) {
   (void)ml;
   (void)ctx;
-  s_main_suppress_next_select_click = true;
   int row = idx->row;
   if (row == 0) {
     return;
   }
   if (row > 0 && row <= s_main_real_list_count) {
-    messaging_send(CMD_W_DELETE_LIST, row - 1, -1, NULL);
+    s_main_suppress_next_select_click = true;
+    list_action_menu_show(row - 1, s_main_titles[row]);
   }
 }
 
@@ -159,6 +159,8 @@ static void setup_main_menu_ui(Window *window) {
   layer_add_child(window_layer, s_main_clock);
 #endif
 }
+
+void main_menu_cancel_select_suppress(void) { s_main_suppress_next_select_click = false; }
 
 void main_menu_reload_from_payload(const char *payload) {
   char buf[TEXT_BUF];

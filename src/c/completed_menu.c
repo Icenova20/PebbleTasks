@@ -6,6 +6,7 @@
 #include "ui_assets.h"
 #include "theme.h"
 #include "ui_clock_bar.h"
+#include "ui_constants.h"
 #include "ui_menu_wrap_cell.h"
 #include "ui_loading.h"
 #include "ui_toast.h"
@@ -46,16 +47,14 @@ static void completed_draw_row(GContext *ctx, const Layer *cell_layer, MenuIndex
 }
 
 static int16_t completed_get_height(MenuLayer *ml, MenuIndex *idx, void *ctx) {
-  (void)ml;
   (void)ctx;
-  Layer *wl = window_get_root_layer(s_completed_window);
   if (idx->row == 0) {
-    return ui_menu_wrap_cell_measure_height(wl, "Clear all", NULL);
+    return (int16_t)UI_CELL_MIN_HEIGHT;
   }
   if (idx->row >= s_completed_num_rows || !s_completed_titles[idx->row]) {
-    return ui_menu_wrap_cell_measure_height(wl, " ", NULL);
+    return ui_menu_wrap_cell_measure_height(ml, " ", NULL);
   }
-  return ui_menu_wrap_cell_measure_height(wl, s_completed_titles[idx->row], NULL);
+  return ui_menu_wrap_cell_measure_height(ml, s_completed_titles[idx->row], NULL);
 }
 
 static void completed_select(MenuLayer *ml, MenuIndex *idx, void *ctx) {
@@ -79,12 +78,12 @@ static void completed_select(MenuLayer *ml, MenuIndex *idx, void *ctx) {
 static void completed_select_long(MenuLayer *ml, MenuIndex *idx, void *ctx) {
   (void)ml;
   (void)ctx;
-  s_completed_suppress_next_select_click = true;
   int row = idx->row;
   if (row == 0) {
     return;
   }
   if (row > 0 && row < s_completed_num_rows) {
+    s_completed_suppress_next_select_click = true;
     Layer *r = window_get_root_layer(s_completed_window);
     ui_loading_start(r);
     messaging_send(CMD_W_DELETE_COMPLETED_TASK, s_completed_list_index, row - 1, NULL);

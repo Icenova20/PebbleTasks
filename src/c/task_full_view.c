@@ -1,5 +1,6 @@
 #include "task_full_view.h"
 
+#include "str_util.h"
 #include "theme.h"
 #include <pebble.h>
 #include <stdio.h>
@@ -7,15 +8,6 @@
 #include <string.h>
 
 #define FULL_VIEW_MARGIN 10
-
-static char *duplicate_cstr(const char *s) {
-  size_t n = strlen(s) + 1;
-  char *out = malloc(n);
-  if (out) {
-    memcpy(out, s, n);
-  }
-  return out;
-}
 
 #ifdef PBL_ROUND
 static GTextAttributes *s_full_attrs;
@@ -116,7 +108,7 @@ void task_full_view_push(const char *title, const char *due_or_null) {
     }
     snprintf(s_body, need, "%s\n\nDue: %s", t, due_or_null);
   } else {
-    s_body = duplicate_cstr(t);
+    s_body = str_util_strdup(t);
     if (!s_body) {
       return;
     }

@@ -3,9 +3,7 @@
 #include <pebble.h>
 
 /**
- * Replaces the status bar on rect: time + app name. Typography matches PebbleChecklist
- * secondary scale (GOTHIC_18_BOLD / GOTHIC_18); B&W no text AA to reduce mottled grain.
- * https://github.com/freakified/PebbleChecklist
+ * Replaces the status bar on rect: time (left) + date (right). Gothic 18 bold.
  */
 #define UI_CLOCK_BAR_HEIGHT 24
 

@@ -49,7 +49,7 @@ static void loading_draw(Layer *layer, GContext *ctx) {
   int32_t span = DEG_TO_TRIGANGLE(LOADING_ARC_DEG);
 
   graphics_context_set_antialiased(ctx, true);
-  graphics_context_set_stroke_color(ctx, theme_accent());
+  graphics_context_set_stroke_color(ctx, theme_loading_indicator());
   graphics_context_set_stroke_width(ctx, LOADING_STROKE_PX);
   draw_arc_clipped(ctx, arc_rect, s_rotation, span);
 

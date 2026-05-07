@@ -2,10 +2,8 @@
 
 #include <pebble.h>
 
-int ui_menu_wrap_cell_text_width(const Layer *window_layer);
-
 /** Height for one wrapped title block plus optional subtitle; clamped to [floor, UI_CELL_MAX]. */
-int16_t ui_menu_wrap_cell_measure_height(const Layer *window_layer, const char *title, const char *subtitle);
+int16_t ui_menu_wrap_cell_measure_height(MenuLayer *menu_layer, const char *title, const char *subtitle);
 
 /**
  * Word-wrapped menu body cell matching MenuLayer normal/highlight colors.
