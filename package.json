@@ -9,6 +9,9 @@
         ],
         "displayName": "PebbleTasks",
         "enableMultiJS": true,
+        "targetPlatforms": [
+            "emery"
+        ],
         "messageKeys": {
             "cmd": 0,
             "listIndex": 1,

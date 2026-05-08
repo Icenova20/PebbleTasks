@@ -10,6 +10,7 @@
 #include "ui_menu_wrap_cell.h"
 #include "ui_loading.h"
 #include "ui_toast.h"
+#include "menu_layer_touch_support.h"
 
 static Window *s_completed_window;
 static MenuLayer *s_completed_menu;
@@ -116,6 +117,7 @@ static void setup_completed_menu_ui(Window *window) {
       });
   menu_layer_set_normal_colors(s_completed_menu, theme_bg(), theme_text());
   menu_layer_set_highlight_colors(s_completed_menu, theme_menu_highlight_bg(), theme_menu_highlight_text());
+  menu_layer_configure_scroll_behavior(s_completed_menu);
 
   layer_add_child(window_layer, menu_layer_get_layer(s_completed_menu));
 
@@ -143,6 +145,27 @@ static void destroy_completed_menu_data(void) {
   s_completed_line_count = 0;
   s_completed_num_rows = 0;
 }
+
+#ifdef PBL_TOUCH
+static void completed_menu_window_appear(Window *w) {
+  (void)w;
+  if (!s_completed_menu) {
+    menu_layer_touch_on_window_disappear();
+    return;
+  }
+  MenuLayerTouchHooks hooks = {.menu = s_completed_menu,
+                              .callback_context = NULL,
+                              .get_num_rows = completed_get_num_rows,
+                              .get_cell_height = completed_get_height,
+                              .select_click = completed_select};
+  menu_layer_touch_on_window_appear(&hooks);
+}
+
+static void completed_menu_window_disappear(Window *w) {
+  (void)w;
+  menu_layer_touch_on_window_disappear();
+}
+#endif
 
 static void rebuild_completed_menu_internal(const char *payload) {
   char buf[TEXT_BUF];
@@ -180,6 +203,10 @@ void completed_menu_push(int list_index) {
     window_set_window_handlers(s_completed_window, (WindowHandlers){
                                                    .load = completed_menu_window_load,
                                                    .unload = completed_menu_window_unload,
+#ifdef PBL_TOUCH
+                                                   .appear = completed_menu_window_appear,
+                                                   .disappear = completed_menu_window_disappear,
+#endif
                                                });
   }
   s_completed_window_on_stack = true;

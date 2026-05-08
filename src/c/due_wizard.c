@@ -4,6 +4,7 @@
 #include "protocol.h"
 #include "theme.h"
 #include "ui_clock_bar.h"
+#include "menu_layer_touch_support.h"
 
 #include <pebble.h>
 #include <stdio.h>
@@ -279,6 +280,11 @@ static void due_unload(Window *w) {
   s_win = NULL;
 }
 
+static void due_window_disappear(Window *w) {
+  (void)w;
+  menu_layer_touch_on_window_disappear();
+}
+
 void due_wizard_push(int list_index, int task_index) {
   s_list_ix = list_index;
   s_task_ix = task_index;
@@ -297,7 +303,9 @@ void due_wizard_push(int list_index, int task_index) {
     return;
   }
   s_win = window_create();
-  window_set_window_handlers(s_win, (WindowHandlers){.load = due_load, .unload = due_unload});
+  window_set_window_handlers(
+      s_win,
+      (WindowHandlers){.load = due_load, .unload = due_unload, .disappear = due_window_disappear});
   window_set_background_color(s_win, theme_bg());
   window_stack_push(s_win, true);
 }

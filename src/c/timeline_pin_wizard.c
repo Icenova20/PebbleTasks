@@ -4,6 +4,7 @@
 #include "protocol.h"
 #include "theme.h"
 #include "ui_clock_bar.h"
+#include "menu_layer_touch_support.h"
 #include "ui_toast.h"
 
 #include <pebble.h>
@@ -431,6 +432,11 @@ static void tp_unload(Window *w) {
   s_win = NULL;
 }
 
+static void tp_window_disappear(Window *w) {
+  (void)w;
+  menu_layer_touch_on_window_disappear();
+}
+
 void timeline_pin_wizard_push(int list_index, int task_index, const char *due_iso_yyyy_mm_dd_or_null) {
   if (s_win) {
     return;
@@ -442,7 +448,9 @@ void timeline_pin_wizard_push(int list_index, int task_index, const char *due_is
   s_focus = TP_FOCUS_MONTH;
 
   s_win = window_create();
-  window_set_window_handlers(s_win, (WindowHandlers){.load = tp_load, .unload = tp_unload});
+  window_set_window_handlers(
+      s_win,
+      (WindowHandlers){.load = tp_load, .unload = tp_unload, .disappear = tp_window_disappear});
   window_set_background_color(s_win, theme_bg());
   window_stack_push(s_win, true);
 }

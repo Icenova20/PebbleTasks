@@ -5,6 +5,7 @@
 #include "completed_menu.h"
 #include "connection_watch.h"
 #include "main_menu.h"
+#include "menu_layer_touch_support.h"
 #include "messaging.h"
 #include "pebble_tasks.h"
 #include "protocol.h"
@@ -61,6 +62,7 @@ static void app_init(void) {
 }
 
 static void app_deinit(void) {
+  menu_layer_touch_on_window_disappear();
   connection_watch_deinit();
   completed_menu_deinit();
   tasks_menu_deinit();

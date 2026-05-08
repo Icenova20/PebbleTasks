@@ -12,6 +12,7 @@
 #include "ui_menu_wrap_cell.h"
 #include "ui_loading.h"
 #include "ui_toast.h"
+#include "menu_layer_touch_support.h"
 
 static Window *s_main_window;
 static MenuLayer *s_main_menu;
@@ -125,6 +126,27 @@ static void destroy_main_menu_data(void) {
   s_main_real_list_count = 0;
 }
 
+#ifdef PBL_TOUCH
+static void main_menu_window_appear(Window *w) {
+  (void)w;
+  if (!s_main_menu) {
+    menu_layer_touch_on_window_disappear();
+    return;
+  }
+  MenuLayerTouchHooks hooks = {.menu = s_main_menu,
+                              .callback_context = NULL,
+                              .get_num_rows = main_get_num_rows,
+                              .get_cell_height = main_get_height,
+                              .select_click = main_select};
+  menu_layer_touch_on_window_appear(&hooks);
+}
+
+static void main_menu_window_disappear(Window *w) {
+  (void)w;
+  menu_layer_touch_on_window_disappear();
+}
+#endif
+
 static void setup_main_menu_ui(Window *window) {
   Layer *window_layer = window_get_root_layer(window);
   GRect wb = layer_get_bounds(window_layer);
@@ -151,6 +173,7 @@ static void setup_main_menu_ui(Window *window) {
       });
   menu_layer_set_normal_colors(s_main_menu, theme_bg(), theme_text());
   menu_layer_set_highlight_colors(s_main_menu, theme_menu_highlight_bg(), theme_menu_highlight_text());
+  menu_layer_configure_scroll_behavior(s_main_menu);
 
   layer_add_child(window_layer, menu_layer_get_layer(s_main_menu));
 
@@ -216,6 +239,10 @@ void main_menu_init(void) {
   window_set_window_handlers(s_main_window, (WindowHandlers){
                                                .load = main_menu_window_load,
                                                .unload = main_menu_window_unload,
+#ifdef PBL_TOUCH
+                                               .appear = main_menu_window_appear,
+                                               .disappear = main_menu_window_disappear,
+#endif
                                            });
 }
 

@@ -2,6 +2,7 @@
 
 #include "str_util.h"
 #include "theme.h"
+#include "menu_layer_touch_support.h"
 #include <pebble.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -27,6 +28,11 @@ static Window *s_win;
 static ScrollLayer *s_scroll;
 static TextLayer *s_text;
 static char *s_body;
+
+static void full_view_touch_disappear(Window *w) {
+  (void)w;
+  menu_layer_touch_on_window_disappear();
+}
 
 static void full_view_window_unload(Window *w) {
   (void)w;
@@ -56,6 +62,7 @@ static void full_view_window_load(Window *w) {
   s_scroll = scroll_layer_create(wb);
   scroll_layer_set_click_config_onto_window(s_scroll, w);
   scroll_layer_set_callbacks(s_scroll, (ScrollLayerCallbacks){0});
+  scroll_layer_set_paging(s_scroll, false);
 
   int tw = wb.size.w - 2 * FULL_VIEW_MARGIN;
   if (tw < 8) {
@@ -115,7 +122,10 @@ void task_full_view_push(const char *title, const char *due_or_null) {
   }
 
   s_win = window_create();
-  window_set_window_handlers(s_win, (WindowHandlers){.load = full_view_window_load, .unload = full_view_window_unload});
+  window_set_window_handlers(s_win,
+                             (WindowHandlers){.load = full_view_window_load,
+                                              .unload = full_view_window_unload,
+                                              .disappear = full_view_touch_disappear});
   window_set_background_color(s_win, theme_bg());
   window_stack_push(s_win, true);
 }

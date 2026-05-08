@@ -13,6 +13,7 @@
 #include "ui_menu_wrap_cell.h"
 #include "ui_loading.h"
 #include "ui_toast.h"
+#include "menu_layer_touch_support.h"
 
 #include <string.h>
 
@@ -159,6 +160,7 @@ static void setup_tasks_menu_ui(Window *window) {
       });
   menu_layer_set_normal_colors(s_tasks_menu, theme_bg(), theme_text());
   menu_layer_set_highlight_colors(s_tasks_menu, theme_menu_highlight_bg(), theme_menu_highlight_text());
+  menu_layer_configure_scroll_behavior(s_tasks_menu);
 
   layer_add_child(window_layer, menu_layer_get_layer(s_tasks_menu));
 
@@ -180,6 +182,27 @@ static void destroy_tasks_menu_layers(void) {
   }
 #endif
 }
+
+#ifdef PBL_TOUCH
+static void tasks_menu_window_appear(Window *w) {
+  (void)w;
+  if (!s_tasks_menu) {
+    menu_layer_touch_on_window_disappear();
+    return;
+  }
+  MenuLayerTouchHooks hooks = {.menu = s_tasks_menu,
+                              .callback_context = NULL,
+                              .get_num_rows = tasks_get_num_rows,
+                              .get_cell_height = tasks_get_height,
+                              .select_click = tasks_select};
+  menu_layer_touch_on_window_appear(&hooks);
+}
+
+static void tasks_menu_window_disappear(Window *w) {
+  (void)w;
+  menu_layer_touch_on_window_disappear();
+}
+#endif
 
 static void destroy_tasks_menu_data(void) {
   int open = s_tasks_open_count;
@@ -258,6 +281,10 @@ void tasks_menu_push(int list_index) {
     window_set_window_handlers(s_tasks_window, (WindowHandlers){
                                                     .load = tasks_menu_window_load,
                                                     .unload = tasks_menu_window_unload,
+#ifdef PBL_TOUCH
+                                                    .appear = tasks_menu_window_appear,
+                                                    .disappear = tasks_menu_window_disappear,
+#endif
                                                 });
   }
   s_tasks_window_is_on_stack = true;

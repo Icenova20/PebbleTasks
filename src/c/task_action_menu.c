@@ -9,9 +9,12 @@
 #include "theme.h"
 #include "ui_clock_bar.h"
 #include "timeline_pin_wizard.h"
+#include "ui_constants.h"
 
 #include <pebble.h>
 #include <stdlib.h>
+
+#include "menu_layer_touch_support.h"
 
 static Window *s_win;
 static MenuLayer *s_menu;
@@ -53,6 +56,19 @@ static void action_draw_row(GContext *ctx, const Layer *cell_layer, MenuIndex *i
   menu_cell_basic_draw(ctx, cell_layer, titles[i], NULL, NULL);
 }
 
+static int16_t action_get_cell_height(MenuLayer *ml, MenuIndex *idx, void *ctx) {
+  (void)ctx;
+#ifndef PBL_ROUND
+  (void)ml;
+  (void)idx;
+  return UI_CELL_MIN_HEIGHT;
+#else
+  MenuIndex sel = menu_layer_get_selected_index(ml);
+  return menu_index_compare(idx, &sel) == 0 ? MENU_CELL_ROUND_FOCUSED_SHORT_CELL_HEIGHT
+                                            : MENU_CELL_ROUND_UNFOCUSED_SHORT_CELL_HEIGHT;
+#endif
+}
+
 static void action_select(MenuLayer *ml, MenuIndex *idx, void *ctx) {
   (void)ml;
   (void)ctx;
@@ -85,6 +101,27 @@ static void action_select(MenuLayer *ml, MenuIndex *idx, void *ctx) {
   messaging_send(CMD_W_DELETE_TASK, li, ti, NULL);
 }
 
+#ifdef PBL_TOUCH
+static void task_action_touch_appear(Window *w) {
+  (void)w;
+  if (!s_menu || !s_win) {
+    menu_layer_touch_on_window_disappear();
+    return;
+  }
+  MenuLayerTouchHooks hooks = {.menu = s_menu,
+                             .callback_context = NULL,
+                             .get_num_rows = action_get_rows,
+                             .get_cell_height = action_get_cell_height,
+                             .select_click = action_select};
+  menu_layer_touch_on_window_appear(&hooks);
+}
+
+static void task_action_touch_disappear(Window *w) {
+  (void)w;
+  menu_layer_touch_on_window_disappear();
+}
+#endif
+
 static void action_load(Window *w) {
   (void)w;
   Layer *wl = window_get_root_layer(s_win);
@@ -110,10 +147,12 @@ static void action_load(Window *w) {
       (MenuLayerCallbacks){
           .get_num_rows = action_get_rows,
           .draw_row = action_draw_row,
+          .get_cell_height = action_get_cell_height,
           .select_click = action_select,
       });
   menu_layer_set_normal_colors(s_menu, theme_bg(), theme_text());
   menu_layer_set_highlight_colors(s_menu, theme_menu_highlight_bg(), theme_menu_highlight_text());
+  menu_layer_configure_scroll_behavior(s_menu);
   layer_add_child(wl, menu_layer_get_layer(s_menu));
 }
 
@@ -154,7 +193,15 @@ void task_action_menu_show(int list_index, int task_index, const char *task_titl
     s_saved_due_iso = str_util_strdup(task_due_iso_yyyy_mm_dd_or_null);
   }
   s_win = window_create();
-  window_set_window_handlers(s_win, (WindowHandlers){.load = action_load, .unload = action_unload});
+  window_set_window_handlers(
+      s_win,
+      (WindowHandlers){.load = action_load,
+                       .unload = action_unload,
+#ifdef PBL_TOUCH
+                       .appear = task_action_touch_appear,
+                       .disappear = task_action_touch_disappear,
+#endif
+      });
   window_set_background_color(s_win, theme_bg());
   window_stack_push(s_win, true);
 }
