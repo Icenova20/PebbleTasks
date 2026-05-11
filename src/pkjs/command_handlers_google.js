@@ -6,7 +6,6 @@ var storage = require('./storage');
 var timeline = require('./timeline');
 
 var maxListNameForMenu = 64;
-var maxListLines = 7; /* keep joined text under app message + TEXT_BUF(512) limits */
 var DAY_MS = 86400000;
 
 /** Pebble enforces -2d to +1y on pin.time. */
@@ -26,8 +25,11 @@ function isPinInstantWithinPebbleRange(timeIsoZ) {
 }
 
 function linesFromListArray(lists) {
+  var maxChars = messaging.maxOutboundText;
+  var maxLines = protocol.MAX_MENU_LINES;
   var out = [];
-  for (var i = 0; i < lists.length && i < maxListLines; i += 1) {
+  var used = 0;
+  for (var i = 0; i < lists.length && out.length < maxLines; i += 1) {
     var title = (lists[i] && (lists[i].title || '')) || '';
     title = storage.truncate(String(title).trim());
     if (!title.length) {
@@ -36,7 +38,12 @@ function linesFromListArray(lists) {
     if (title.length > maxListNameForMenu) {
       title = title.substring(0, maxListNameForMenu - 1) + '…';
     }
+    var addLen = title.length + (out.length > 0 ? 1 : 0);
+    if (used + addLen > maxChars) {
+      break;
+    }
     out.push(title);
+    used += addLen;
   }
   return out.join('\n');
 }

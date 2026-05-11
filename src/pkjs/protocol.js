@@ -1,6 +1,7 @@
 // Mirror src/c/protocol.h and package.json message keys
 
 module.exports = {
+  MAX_MENU_LINES: 20,
   CMD_W_ASK_LISTS: 1,
   CMD_W_ASK_OPEN: 2,
   CMD_W_ADD_LIST: 3,

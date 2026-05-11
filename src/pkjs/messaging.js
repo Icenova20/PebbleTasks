@@ -105,6 +105,7 @@ function replyToast(text) {
 }
 
 module.exports = {
+  maxOutboundText: maxOutboundText,
   payloadPick: payloadPick,
   replyLists: replyLists,
   replyOpenTaskLines: replyOpenTaskLines,
