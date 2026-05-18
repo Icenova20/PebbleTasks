@@ -1,16 +1,21 @@
 <p>PebbleTasks is a hobby project. This page describes how data is handled, including when you connect Google.</p>
+<p class="hint"><strong>Note (May 2026):</strong> This policy includes explicit disclosures of <strong>what Google user data</strong> PebbleTasks requests, accesses, and processes when you enable Google Tasks integration.</p>
+
+<h2>Google user data collected and accessed by this application</h2>
+<p>When you choose Google mode and sign in, PebbleTasks requests the OAuth scope <code>https://www.googleapis.com/auth/tasks</code> (Google Tasks only). <strong>We do not request access to your Google profile, Gmail, Calendar, Drive, Contacts, or other Google services.</strong></p>
+<p><strong>The data we access from your Google account is limited to what is needed for Google Tasks on your watch and phone.</strong> We do not ask you to provide your name, cell phone number, mailing address, or similar contact details to PebbleTasks, and we do not use Google sign-in to build a marketing profile about you.</p>
+<p><strong>We may collect, access, or process on your behalf the following categories of Google user data when you use or interact with PebbleTasks with Google integration enabled:</strong></p>
+<ul>
+  <li><strong>Authentication data from Google OAuth</strong> — <code>access_token</code>, <code>refresh_token</code> (when Google issues one), <code>expires_in</code>, and <code>token_type</code>. Used only so the app can call the Google Tasks API on your device. Our public OAuth helper server does <strong>not</strong> persist these tokens; the companion app may store them locally on your phone.</li>
+  <li><strong>Google Tasks task lists</strong> — list identifiers and list titles (for example to show your lists on the watch and create or delete lists when you use those features).</li>
+  <li><strong>Google Tasks tasks</strong> — task identifiers, titles, completion status (<code>needsAction</code> / <code>completed</code>), due dates, and ordering/position fields needed to display, complete, reopen, set or clear due dates, and delete tasks. Task <strong>notes</strong> and other Tasks fields are <strong>not</strong> read or displayed by this app.</li>
+</ul>
+<p><strong>Google user data we do not collect or access:</strong> your Google account password; your name, email address, phone number, or postal address from Google People/Profile APIs; Gmail messages; Calendar events; Drive files; location data; or any Google data outside the Tasks scope listed above.</p>
+<p><strong>Where this data is processed:</strong> Google Tasks API calls are made from the Pebble companion app on your phone using the stored OAuth token. Task content is shown on your watch via the companion link. Our OAuth helper website exchanges authorization codes and optional refresh requests in memory only; it does not maintain a server database of your tasks or tokens.</p>
 
 <h2>How we use Google-related data</h2>
 <p>We use information from your Google account <strong>only</strong> to provide the functionality you asked for: <strong>viewing and editing your Google Tasks</strong> through the Pebble companion app and watch. We do not use Google user data for unrelated features (for example, we do not use it for email newsletters, marketing lists, or broad “analytics” profiles).</p>
 <p><strong>We do not sell your data.</strong> We may share it only with parties that are strictly necessary to deliver the service you requested—principally <strong>Google</strong> (OAuth sign-in and the Google Tasks API), your <strong>device software</strong> (Pebble companion and watch), and ordinary <strong>infrastructure providers</strong> that only see encrypted HTTPS traffic in transit (for example hosting, DNS, and TLS). Those providers do not receive your data for their own purposes beyond carrying the connection.</p>
-
-<h2>What Google user data we collect or process</h2>
-<p>PebbleTasks is not designed to gather a profile about you (such as your name, phone number, or mailing address) into a server-side database. When you use Google integration, the following applies:</p>
-<ul>
-  <li><strong>OAuth tokens</strong> (access token, and refresh token when Google issues one): <strong>This project’s OAuth helper server does not store them</strong>—there is no database and tokens are not written to disk. They exist only in server memory for the active HTTP request to exchange an authorization code with Google or to refresh an access token, then are returned to <strong>your Pebble companion app</strong>, which may save them <strong>locally on your phone</strong> (for example in the app’s storage) so it alone can call Google’s APIs for Tasks.</li>
-  <li><strong>Google Tasks content</strong> (for example task titles, notes, lists, and completion state): fetched from Google by the companion app and shown or updated on your devices; <strong>not uploaded to or stored on this website’s server.</strong></li>
-  <li><strong>Settings in the web UI</strong> (for example local vs Google mode): used in your browser to configure the flow; <strong>we do not maintain a per-user account or task database on the server for this.</strong></li>
-</ul>
 
 <h2>What this server stores</h2>
 <p><strong>We do not persist OAuth tokens, refresh tokens, or Google Tasks data on this server.</strong> The only long-lived items involved in sign-in are short-lived OAuth <code>state</code> values kept in memory to match the callback to your session, then discarded. For the exact behavior, see the open-source server and the note on the settings page.</p>
