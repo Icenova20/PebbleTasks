@@ -1,5 +1,6 @@
-<p>PebbleTasks is a hobby project. This page describes how data is handled, including when you connect Google.</p>
-<p class="hint"><strong>Note (May 2026):</strong> This policy includes explicit disclosures of <strong>what Google user data</strong> PebbleTasks requests, accesses, and processes when you enable Google Tasks integration.</p>
+<p><strong>Last updated:</strong> May 18, 2026.</p>
+<p>PebbleTasks is a hobby project developed by <strong>Shan Srini</strong>. Source code, including the OAuth helper server that hosts this privacy policy, is open and available at <a href="https://github.com/shan-srini/PebbleTasks" target="_blank" rel="noopener noreferrer">https://github.com/shan-srini/PebbleTasks</a>. This privacy policy applies to the PebbleTasks application (Pebble watchapp and companion) and to the OAuth helper website at <code>pebbletasks.shansrini.com</code>.</p>
+<p class="hint"><strong>Note (May 2026):</strong> This policy includes explicit disclosures of <strong>what Google user data</strong> PebbleTasks requests, accesses, and processes when you enable Google Tasks integration, as well as how that data is used, shared, protected, retained, and deleted.</p>
 
 <h2>Google user data collected and accessed by this application</h2>
 <p>When you choose Google mode and sign in, PebbleTasks requests the OAuth scope <code>https://www.googleapis.com/auth/tasks</code> (Google Tasks only). <strong>We do not request access to your Google profile, Gmail, Calendar, Drive, Contacts, or other Google services.</strong></p>
@@ -48,11 +49,31 @@
   <li>Because we do not host a per-user data store on this server, there is typically <strong>nothing server-side for us to delete</strong> on request. For privacy questions or related requests, you may <strong>open an issue</strong> on the project repository: <a href="https://github.com/shan-srini/PebbleTasks" target="_blank" rel="noopener noreferrer">https://github.com/shan-srini/PebbleTasks</a>. To remove data from your devices or Google’s side, use app storage controls and Google account revocation as described above.</li>
 </ul>
 
-<h2>Third-party services</h2>
-<p>PebbleTasks depends on third-party services and software (including Google APIs, Rebble/Pebble companion behavior, hosting, DNS, and network providers). Their outages, policy changes, or platform behavior can affect functionality.</p>
+<h2>Limited Use of Google user data</h2>
+<p>PebbleTasks’ use of information received from Google APIs adheres to the <a href="https://developers.google.com/terms/api-services-user-data-policy" target="_blank" rel="noopener noreferrer">Google API Services User Data Policy</a>, including the Limited Use requirements. Specifically, we <strong>do not</strong> use Google user data for any of the following purposes:</p>
+<ul>
+  <li>Targeted, personalized, retargeted, or interest-based advertising of any kind.</li>
+  <li>Selling Google user data, transferring it to data brokers, or providing it to information resellers.</li>
+  <li>Determining credit-worthiness or for lending purposes.</li>
+  <li>Serving user advertisements.</li>
+  <li>Creating, augmenting, or maintaining databases for advertising or profiling.</li>
+  <li>Training or improving generalized or third-party AI/ML models.</li>
+</ul>
+<p>Our use of Google Tasks data is limited to providing and improving the user-facing functionality of PebbleTasks (viewing and editing your Google Tasks on your Pebble watch and phone).</p>
 
-<h2>Security limitations</h2>
-<p>Reasonable efforts may be used, but no method of transmission or storage is 100% secure. Use at your own risk.</p>
+<h2>How we protect Google user data</h2>
+<ul>
+  <li><strong>Encryption in transit:</strong> All communication with Google APIs and with the OAuth helper website is over <strong>HTTPS/TLS</strong>. OAuth tokens are passed only over encrypted connections.</li>
+  <li><strong>Minimum scope:</strong> PebbleTasks requests only the <code>https://www.googleapis.com/auth/tasks</code> scope. No profile, email, contacts, calendar, Drive, or other Google scopes are requested.</li>
+  <li><strong>No server-side storage of sensitive data:</strong> The OAuth helper server does not write OAuth tokens, refresh tokens, or Google Tasks content to a database or disk. Tokens are handled in memory only for the duration of the OAuth code exchange or refresh request.</li>
+  <li><strong>Standard OAuth 2.0 flow:</strong> Sign-in uses the standard Google OAuth 2.0 authorization code flow with short-lived <code>state</code> values to mitigate CSRF, and refresh tokens issued by Google are used to obtain new access tokens without re-prompting.</li>
+  <li><strong>On-device storage controls:</strong> When the companion app stores a token on your phone, it is held in the Pebble companion app’s storage on your device. You can remove it at any time by clearing the app’s data, uninstalling the companion app, or revoking access from your <a href="https://myaccount.google.com/permissions" target="_blank" rel="noopener noreferrer">Google account permissions</a> page.</li>
+  <li><strong>Open source:</strong> The OAuth helper server and the PebbleTasks app are open source, so the data-handling behavior described here is independently verifiable.</li>
+</ul>
+<p>No method of transmission or storage is 100% secure on the internet; however, the practices above are designed to keep Google user data confidential and minimize exposure.</p>
+
+<h2>Third-party services</h2>
+<p>PebbleTasks depends on third-party services and software (including Google APIs, Rebble/Pebble companion behavior, hosting, DNS, and network providers). Their outages, policy changes, or platform behavior can affect functionality. These providers act only as conduits for encrypted HTTPS traffic and do not receive Google user data for their own independent purposes.</p>
 
 <h2>Google account permissions</h2>
 <p>If you connect Google, you can revoke PebbleTasks access at any time from your Google account permissions page.</p>
@@ -64,4 +85,7 @@
 <p>This is an as-is hobby project. No guarantees are made about availability, security, fitness for any purpose, or data retention.</p>
 
 <h2>Policy changes</h2>
-<p>This policy may be updated at any time. Continued use after updates means you accept the revised policy.</p>
+<p>This policy may be updated at any time. The <strong>“Last updated”</strong> date at the top of this page reflects the most recent revision. Material changes to how PebbleTasks uses Google user data will be reflected here. Continued use after updates means you accept the revised policy.</p>
+
+<h2>Contact</h2>
+<p>For privacy questions, data requests, or to report a concern about PebbleTasks’ handling of Google user data, please open an issue on the project repository: <a href="https://github.com/shan-srini/PebbleTasks/issues" target="_blank" rel="noopener noreferrer">https://github.com/shan-srini/PebbleTasks/issues</a>.</p>
