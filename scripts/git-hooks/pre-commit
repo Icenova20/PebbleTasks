@@ -1,0 +1,30 @@
+#!/usr/bin/env bash
+# Pre-commit: drop local OAuth secrets, block accidental staging, verify pebble build.
+set -euo pipefail
+
+ROOT="$(git rev-parse --show-toplevel)"
+cd "$ROOT"
+
+LOCAL="src/pkjs/oauth_config.local.js"
+
+if git diff --cached --name-only --diff-filter=ACM | grep -qxF "$LOCAL"; then
+  echo "pre-commit: $LOCAL is staged — never commit this file (it is gitignored)."
+  exit 1
+fi
+
+if [[ -f "$LOCAL" ]]; then
+  rm -f "$LOCAL"
+  echo "pre-commit: removed $LOCAL (re-run: npm run decode-token -- 'PEBBLETASKS1…')"
+fi
+
+if [[ "${SKIP_PEBBLE_BUILD:-}" == "1" ]]; then
+  exit 0
+fi
+
+if ! command -v pebble >/dev/null 2>&1; then
+  echo "pre-commit: pebble CLI not on PATH — skipped build (install SDK or SKIP_PEBBLE_BUILD=1)."
+  exit 0
+fi
+
+echo "pre-commit: running pebble build…"
+pebble build

@@ -12,7 +12,10 @@
         "targetPlatforms": [
             "emery",
             "flint",
-            "gabbro"
+            "gabbro",
+            "basalt",
+            "diorite",
+            "chalk"
         ],
         "messageKeys": {
             "cmd": 0,
@@ -36,5 +39,9 @@
             "watchface": false
         }
     },
-    "version": "1.0.2"
+    "version": "1.0.2",
+    "scripts": {
+        "decode-token": "node scripts/pebbletasks-decode-token.js",
+        "setup-hooks": "bash scripts/install-git-hooks.sh"
+    }
 }
