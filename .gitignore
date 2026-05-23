@@ -4,3 +4,4 @@ node_modules/
 **.env**
 .lock-waf_darwin_build
 src/pkjs/oauth_config.local.js
+.DS_Store
