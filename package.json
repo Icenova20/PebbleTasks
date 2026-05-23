@@ -10,7 +10,9 @@
         "displayName": "PebbleTasks",
         "enableMultiJS": true,
         "targetPlatforms": [
-            "emery"
+            "emery",
+            "flint",
+            "gabbro"
         ],
         "messageKeys": {
             "cmd": 0,

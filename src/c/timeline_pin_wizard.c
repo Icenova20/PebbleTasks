@@ -230,8 +230,9 @@ static void tp_canvas_update(Layer *layer, GContext *ctx) {
   graphics_draw_text(ctx, title, title_font, title_rect, GTextOverflowModeFill, GTextAlignmentCenter, NULL);
 
   int gap = 4;
-  int date_top = PBL_IF_ROUND_ELSE(30, 22);
-  int row_h = PBL_IF_ROUND_ELSE(44, 40);
+  int date_top = PBL_IF_ROUND_ELSE(30, (b.size.h >= 170) ? 22 : 14);
+  int row_h = PBL_IF_ROUND_ELSE(44, (b.size.h >= 170) ? 40 : 32);
+  int time_gap = PBL_IF_ROUND_ELSE(18, (b.size.h >= 170) ? 18 : 12);
   int inner_w = b.size.w - 16;
   int x0 = 8;
   int box_w3 = (inner_w - 2 * gap) / 3;
@@ -278,7 +279,7 @@ static void tp_canvas_update(Layer *layer, GContext *ctx) {
   }
 
   /* Time row */
-  int time_top = date_top + row_h + 18;
+  int time_top = date_top + row_h + time_gap;
   int box_w2 = (inner_w - gap) / 2;
 
   for (int k = 0; k < 2; k++) {

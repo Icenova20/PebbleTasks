@@ -121,8 +121,8 @@ static void due_canvas_update(Layer *layer, GContext *ctx) {
   graphics_draw_text(ctx, title, title_font, title_rect, GTextOverflowModeFill, GTextAlignmentCenter, NULL);
 
   int gap = 4;
-  int row_top = PBL_IF_ROUND_ELSE(44, 36);
-  int row_h = PBL_IF_ROUND_ELSE(52, 48);
+  int row_top = PBL_IF_ROUND_ELSE(44, (b.size.h >= 170) ? 36 : 28);
+  int row_h = PBL_IF_ROUND_ELSE(52, (b.size.h >= 170) ? 48 : 40);
   int inner_w = b.size.w - 16;
   int x0 = 8;
   /* Equal thirds */
