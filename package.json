@@ -1,5 +1,5 @@
 {
-    "author": "shanmansand@gmail.com",
+    "author": "breezy",
     "dependencies": {},
     "keywords": [],
     "name": "pebbletasks",
@@ -36,5 +36,5 @@
             "watchface": false
         }
     },
-    "version": "1.0.1"
+    "version": "1.0.2"
 }
