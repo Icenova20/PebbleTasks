@@ -2,6 +2,7 @@ var oauthConfig = require('./oauth_config');
 
 var MODE_KEY = 'pebbletasks_mode';
 var AUTH_KEY = 'pebbletasks_google_auth';
+var AUTO_TIMELINE_KEY = 'pebbletasks_auto_timeline';
 
 /** PebbleKit JS may not define `atob`; payload is ASCII JSON after decode. */
 function base64DecodeToBinaryString(b64) {
@@ -113,6 +114,18 @@ function getMode() {
 function setMode(mode) {
   if (mode === 'google' || mode === 'local') {
     localStorage.setItem(MODE_KEY, mode);
+  }
+}
+
+function getAutoTimeline() {
+  return localStorage.getItem(AUTO_TIMELINE_KEY) === '1';
+}
+
+function setAutoTimeline(val) {
+  if (val) {
+    localStorage.setItem(AUTO_TIMELINE_KEY, '1');
+  } else {
+    localStorage.setItem(AUTO_TIMELINE_KEY, '0');
   }
 }
 
@@ -247,4 +260,6 @@ module.exports = {
   clearGoogleAuth: clearGoogleAuth,
   getValidAccessToken: getValidAccessToken,
   getValidAccessTokenAsync: getValidAccessTokenAsync,
+  getAutoTimeline: getAutoTimeline,
+  setAutoTimeline: setAutoTimeline,
 };

@@ -18,6 +18,9 @@ function applyConfigObject(cfg) {
   } else if (cfg.mode === 'local' || cfg.mode === 'google') {
     authStorage.setMode(cfg.mode);
   }
+  if (cfg.auto_timeline !== undefined) {
+    authStorage.setAutoTimeline(!!cfg.auto_timeline);
+  }
 }
 
 Pebble.addEventListener('ready', function () {
@@ -96,11 +99,12 @@ Pebble.addEventListener('showConfiguration', function (e) {
   }
   var ret = getConfigurationReturnTo(e);
   var modeQ = 'current_mode=' + encodeURIComponent(authStorage.getMode() === 'google' ? 'google' : 'local');
+  var timelineQ = 'auto_timeline=' + (authStorage.getAutoTimeline() ? '1' : '0');
   var auth = authStorage.getAuthObject();
   var hasGoogleAuth = !!(auth && (auth.access_token || auth.refresh_token));
   var signedQ = 'signed_in=' + (hasGoogleAuth ? '1' : '0');
   var startUrl =
-    base + '/?return_to=' + encodeURIComponent(ret) + '&' + modeQ + '&' + signedQ;
+    base + '/?return_to=' + encodeURIComponent(ret) + '&' + modeQ + '&' + timelineQ + '&' + signedQ;
   Pebble.openURL(startUrl);
 });
 

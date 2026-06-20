@@ -46,6 +46,12 @@
       }
     }
   }
+  
+  var timelineToggle = document.getElementById('autoTimeline');
+  var curTimeline = getQueryParam('auto_timeline', '0');
+  if (timelineToggle && curTimeline === '1') {
+    timelineToggle.checked = true;
+  }
   if (document.body) {
     if (curMode === 'google') {
       document.body.className = 'mode-google';
@@ -124,7 +130,11 @@
       alert('Missing return_to — open settings from the Pebble app.');
       return;
     }
-    var payload = { mode: mode };
+    var tl = document.getElementById('autoTimeline');
+    var payload = { 
+      mode: mode, 
+      auto_timeline: tl && tl.checked ? 1 : 0 
+    };
     if (rt.indexOf('#') >= 0) {
       document.location = rt + encodeURIComponent(JSON.stringify(payload));
     } else {

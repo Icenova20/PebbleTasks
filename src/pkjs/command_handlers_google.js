@@ -56,6 +56,31 @@ function openAndFlagAsync(accessToken, listIx, done) {
       return;
     }
     api.listOpenTasksSortedAsync(accessToken, tlId, function (open) {
+      if (auth.getAutoTimeline && auth.getAutoTimeline()) {
+        timeline.getTimelineTokenAsync(function (timelineToken) {
+          if (timelineToken) {
+            var listName = '';
+            for (var li = 0; li < lists.length; li++) {
+              if (api.taskListIdFromLists(lists, li) === tlId) {
+                listName = (lists[li] && lists[li].title) || '';
+                break;
+              }
+            }
+            open.forEach(function (taskP) {
+              if (taskP && taskP.due) {
+                var dueP = storage.extractDueYmd(taskP.due);
+                if (dueP) {
+                  var timeIso = dueP + 'T09:00:00Z';
+                  var pinId = timeline.newPinId('g');
+                  var pin = timeline.buildTaskPin(pinId, taskP.title || '', timeIso, listName);
+                  timeline.pushPin(timelineToken, pin);
+                }
+              }
+            });
+          }
+        });
+      }
+
       var lineStr = open
         .map(function (t) {
           var title = storage.truncate(t.title || '');
