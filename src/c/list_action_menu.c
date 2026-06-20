@@ -7,6 +7,7 @@
 #include "theme.h"
 #include "ui_clock_bar.h"
 #include "ui_constants.h"
+#include "ui_toast.h"
 
 #include <pebble.h>
 #include <stdlib.h>
@@ -30,15 +31,16 @@ static uint16_t list_action_get_rows(MenuLayer *ml, uint16_t section, void *ctx)
   (void)ml;
   (void)section;
   (void)ctx;
-  return 1;
+  return 2;
 }
 
 static void list_action_draw_row(GContext *ctx, const Layer *cell_layer, MenuIndex *idx, void *cb_ctx) {
   (void)cb_ctx;
-  if (idx->row != 0) {
-    return;
+  if (idx->row == 0) {
+    menu_cell_basic_draw(ctx, cell_layer, "Delete list", NULL, NULL);
+  } else if (idx->row == 1) {
+    menu_cell_basic_draw(ctx, cell_layer, "Set as Default", NULL, NULL);
   }
-  menu_cell_basic_draw(ctx, cell_layer, "Delete list", NULL, NULL);
 }
 
 static int16_t list_action_get_cell_height(MenuLayer *ml, MenuIndex *idx, void *ctx) {
@@ -57,14 +59,21 @@ static int16_t list_action_get_cell_height(MenuLayer *ml, MenuIndex *idx, void *
 static void list_action_select(MenuLayer *ml, MenuIndex *idx, void *ctx) {
   (void)ml;
   (void)ctx;
-  if (idx->row != 0) {
-    return;
+  if (idx->row == 0) {
+    int li = s_list_ix;
+    window_stack_pop(true);
+    s_win = NULL;
+    s_menu = NULL;
+    messaging_send(CMD_W_DELETE_LIST, li, -1, NULL);
+  } else if (idx->row == 1) {
+    if (s_saved_title) {
+      persist_write_string(PERSIST_KEY_DEFAULT_LIST_TITLE, s_saved_title);
+      ui_toast_show("Default list set");
+    }
+    window_stack_pop(true);
+    s_win = NULL;
+    s_menu = NULL;
   }
-  int li = s_list_ix;
-  window_stack_pop(true);
-  s_win = NULL;
-  s_menu = NULL;
-  messaging_send(CMD_W_DELETE_LIST, li, -1, NULL);
 }
 
 #ifdef PBL_TOUCH

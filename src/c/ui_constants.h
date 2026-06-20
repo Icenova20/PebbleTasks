@@ -5,6 +5,8 @@
 #define UI_TOAST_HEIGHT 36
 #define UI_TOAST_FONT_KEY FONT_KEY_GOTHIC_18_BOLD
 
+#define PERSIST_KEY_DEFAULT_LIST_TITLE 100
+
 /** Matches Settings/basic menu typography for wrapped rows. */
 #define UI_MENU_FONT_KEY FONT_KEY_GOTHIC_24_BOLD
 #define UI_TASK_DUE_FONT_KEY FONT_KEY_GOTHIC_18_BOLD

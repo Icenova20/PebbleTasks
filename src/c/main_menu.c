@@ -25,6 +25,7 @@ static int s_main_real_list_count;
 
 static bool s_main_suppress_next_select_click;
 static bool s_adding_list;
+static bool s_has_auto_opened = false;
 
 /** PKJS may attach appmessage after the first outbound CMD_W_ASK_LISTS; retry lists shortly after load. */
 static AppTimer *s_lists_retry_timer;
@@ -186,12 +187,15 @@ static void setup_main_menu_ui(Window *window) {
 void main_menu_cancel_select_suppress(void) { s_main_suppress_next_select_click = false; }
 
 void main_menu_reload_from_payload(const char *payload) {
-  char buf[TEXT_BUF];
+  APP_LOG(APP_LOG_LEVEL_DEBUG, "reload start");
+  char *buf = malloc(TEXT_BUF);
+  if (!buf) return;
+  
   destroy_main_menu_data();
 
   if (payload) {
-    strncpy(buf, payload, sizeof(buf) - 1);
-    buf[sizeof(buf) - 1] = '\0';
+    strncpy(buf, payload, TEXT_BUF - 1);
+    buf[TEXT_BUF - 1] = '\0';
   } else {
     buf[0] = '\0';
   }
@@ -200,21 +204,52 @@ void main_menu_reload_from_payload(const char *payload) {
   s_main_titles[0] = str_util_strdup("");
   if (!s_main_titles[0]) {
     s_main_num_rows = 0;
+    free(buf);
     return;
   }
+  
+  APP_LOG(APP_LOG_LEVEL_DEBUG, "reload before menu reload");
   if (s_main_menu) {
     menu_layer_reload_data(s_main_menu);
   }
+
+  APP_LOG(APP_LOG_LEVEL_DEBUG, "reload before persist");
+  if (!s_has_auto_opened && s_main_real_list_count > 0 && persist_exists(PERSIST_KEY_DEFAULT_LIST_TITLE)) {
+    char *default_title = malloc(TEXT_BUF);
+    if (default_title) {
+      APP_LOG(APP_LOG_LEVEL_DEBUG, "reload reading persist");
+      persist_read_string(PERSIST_KEY_DEFAULT_LIST_TITLE, default_title, TEXT_BUF);
+      APP_LOG(APP_LOG_LEVEL_DEBUG, "reload checking titles");
+      for (int i = 1; i <= s_main_real_list_count; i++) {
+        if (s_main_titles[i] && strcmp(s_main_titles[i], default_title) == 0) {
+          tasks_menu_push(i - 1);
+          break;
+        }
+      }
+      free(default_title);
+    }
+    s_has_auto_opened = true;
+  }
+  free(buf);
+  APP_LOG(APP_LOG_LEVEL_DEBUG, "reload end");
 }
 
 void main_menu_window_load(Window *w) {
+  APP_LOG(APP_LOG_LEVEL_DEBUG, "main_menu_window_load start");
   (void)w;
   Layer *root = window_get_root_layer(s_main_window);
+  APP_LOG(APP_LOG_LEVEL_DEBUG, "setup_main_menu_ui");
   setup_main_menu_ui(s_main_window);
+  APP_LOG(APP_LOG_LEVEL_DEBUG, "ui_toast_init");
   ui_toast_init(root);
+  APP_LOG(APP_LOG_LEVEL_DEBUG, "main_menu_reload");
   main_menu_reload_from_payload("");
+  APP_LOG(APP_LOG_LEVEL_DEBUG, "ui_loading");
   ui_loading_start(root);
+  APP_LOG(APP_LOG_LEVEL_DEBUG, "messaging");
   messaging_request_lists();
+  APP_LOG(APP_LOG_LEVEL_DEBUG, "main_menu_window_load end");
+
   if (s_lists_retry_timer) {
     app_timer_cancel(s_lists_retry_timer);
     s_lists_retry_timer = NULL;
