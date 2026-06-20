@@ -25,6 +25,7 @@ static int s_main_real_list_count;
 
 static bool s_main_suppress_next_select_click;
 static bool s_adding_list;
+static bool s_has_auto_opened = false;
 
 /** PKJS may attach appmessage after the first outbound CMD_W_ASK_LISTS; retry lists shortly after load. */
 static AppTimer *s_lists_retry_timer;
@@ -204,6 +205,18 @@ void main_menu_reload_from_payload(const char *payload) {
   }
   if (s_main_menu) {
     menu_layer_reload_data(s_main_menu);
+  }
+
+  if (!s_has_auto_opened && persist_exists(PERSIST_KEY_DEFAULT_LIST_TITLE)) {
+    char default_title[TEXT_BUF];
+    persist_read_string(PERSIST_KEY_DEFAULT_LIST_TITLE, default_title, sizeof(default_title));
+    for (int i = 1; i <= s_main_real_list_count; i++) {
+      if (s_main_titles[i] && strcmp(s_main_titles[i], default_title) == 0) {
+        tasks_menu_push(i - 1);
+        break;
+      }
+    }
+    s_has_auto_opened = true;
   }
 }
 
