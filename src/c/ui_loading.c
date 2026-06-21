@@ -61,15 +61,17 @@ static void loading_draw(Layer *layer, GContext *ctx) {
                      NULL);
 }
 
-static AppTimer *s_spin_timer = NULL;
-
-static void spin_timer_cb(void *data) {
-  s_rotation += (TRIG_MAX_ANGLE / 30); // rotate roughly 30 times a sec
+static void spin_update(Animation *animation, const AnimationProgress progress) {
+  (void)animation;
+  s_rotation = (int32_t)((int64_t)progress * (int64_t)TRIG_MAX_ANGLE / (int64_t)ANIMATION_NORMALIZED_MAX);
   if (s_backdrop) {
     layer_mark_dirty(s_backdrop);
-    s_spin_timer = app_timer_register(33, spin_timer_cb, NULL);
   }
 }
+
+static const AnimationImplementation s_spin_impl = {
+  .update = spin_update,
+};
 
 static void timeout_cb(void *data) {
   (void)data;
@@ -83,12 +85,19 @@ void ui_loading_start(Layer *window_root_layer) {
   }
   ui_loading_stop();
 
-  s_backdrop = layer_create(layer_get_bounds(window_root_layer));
+  s_rotation = 0;
+  GRect bounds = layer_get_bounds(window_root_layer);
+  s_backdrop = layer_create(bounds);
   layer_set_update_proc(s_backdrop, loading_draw);
   layer_add_child(window_root_layer, s_backdrop);
 
-  s_rotation = 0;
-  s_spin_timer = app_timer_register(33, spin_timer_cb, NULL);
+  s_spin_anim = animation_create();
+  animation_set_implementation(s_spin_anim, &s_spin_impl);
+  animation_set_duration(s_spin_anim, LOADING_SPIN_MS);
+  animation_set_curve(s_spin_anim, AnimationCurveLinear);
+  animation_set_play_count(s_spin_anim, ANIMATION_DURATION_INFINITE);
+  animation_schedule(s_spin_anim);
+
   s_timeout_timer = app_timer_register(LOADING_TIMEOUT_MS, timeout_cb, NULL);
 }
 
@@ -97,9 +106,10 @@ void ui_loading_stop(void) {
     app_timer_cancel(s_timeout_timer);
     s_timeout_timer = NULL;
   }
-  if (s_spin_timer) {
-    app_timer_cancel(s_spin_timer);
-    s_spin_timer = NULL;
+  if (s_spin_anim) {
+    animation_unschedule(s_spin_anim);
+    animation_destroy(s_spin_anim);
+    s_spin_anim = NULL;
   }
   if (s_backdrop) {
     layer_remove_from_parent(s_backdrop);

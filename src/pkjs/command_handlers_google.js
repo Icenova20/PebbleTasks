@@ -56,32 +56,6 @@ function openAndFlagAsync(accessToken, listIx, done) {
       return;
     }
     api.listOpenTasksSortedAsync(accessToken, tlId, function (open) {
-      var isListTimelineEnabled = localStorage.getItem('timeline_sync_' + tlId) === '1';
-      if (isListTimelineEnabled) {
-        timeline.getTimelineTokenAsync(function (timelineToken) {
-          if (timelineToken) {
-            var listName = '';
-            for (var li = 0; li < lists.length; li++) {
-              if (api.taskListIdFromLists(lists, li) === tlId) {
-                listName = (lists[li] && lists[li].title) || '';
-                break;
-              }
-            }
-            open.forEach(function (taskP) {
-              if (taskP && taskP.due) {
-                var dueP = storage.extractDueYmd(taskP.due);
-                if (dueP) {
-                  var timeIso = dueP + 'T09:00:00Z';
-                  var pinId = timeline.newPinId('g');
-                  var pin = timeline.buildTaskPin(pinId, taskP.title || '', timeIso, listName);
-                  timeline.pushPin(timelineToken, pin);
-                }
-              }
-            });
-          }
-        });
-      }
-
       var lineStr = open
         .map(function (t) {
           var title = storage.truncate(t.title || '');
@@ -132,7 +106,7 @@ function replyEmptyForCmd(cmd, listIx) {
     messaging.replyCompletedTaskLinesForList(listIx, '');
   } else if (cmd === protocol.CMD_W_SET_TASK_DUE || cmd === protocol.CMD_W_CLEAR_TASK_DUE) {
     messaging.replyOpenTaskLinesForList(listIx, '', 0);
-  } else if (cmd === protocol.CMD_W_PIN_TASK || cmd === protocol.CMD_W_SET_TIMELINE_SYNC) {
+  } else if (cmd === protocol.CMD_W_PIN_TASK) {
     messaging.replyToast('Sign in to Google');
   } else {
     messaging.replyListsWithText('');
@@ -143,26 +117,13 @@ function replyEmptyForCmd(cmd, listIx) {
 function dispatch(cmd, listIx, taskIx, text) {
   auth.getValidAccessTokenAsync(function (token) {
     if (!token) {
-      if (cmd === protocol.CMD_W_ASK_LISTS) {
-        messaging.replyListsWithText("Test List 1\nTest List 2\nTest List 3");
-      } else {
-        replyEmptyForCmd(cmd, listIx);
-      }
+      replyEmptyForCmd(cmd, listIx);
       return;
     }
 
     if (cmd === protocol.CMD_W_ASK_LISTS) {
       api.listTaskListsAsync(token, function (lists) {
         messaging.replyListsWithText(linesFromListArray(lists));
-      });
-      return;
-    }
-    if (cmd === protocol.CMD_W_SET_TIMELINE_SYNC) {
-      api.listTaskListsAsync(token, function (lists) {
-        var tlId = api.taskListIdFromLists(lists, listIx);
-        if (tlId) {
-          localStorage.setItem('timeline_sync_' + tlId, text);
-        }
       });
       return;
     }

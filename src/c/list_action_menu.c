@@ -7,7 +7,6 @@
 #include "theme.h"
 #include "ui_clock_bar.h"
 #include "ui_constants.h"
-#include "ui_toast.h"
 
 #include <pebble.h>
 #include <stdlib.h>
@@ -27,85 +26,19 @@ static void clear_saved_strings(void) {
   s_saved_title = NULL;
 }
 
-bool is_list_timeline_synced(const char *title) {
-  if (!title || !title[0]) return false;
-  char synced_lists[256] = {0};
-  if (persist_exists(PERSIST_KEY_TIMELINE_SYNC_LISTS)) {
-    persist_read_string(PERSIST_KEY_TIMELINE_SYNC_LISTS, synced_lists, sizeof(synced_lists));
-  }
-  char *p = synced_lists;
-  while (p && *p) {
-    char *next = strchr(p, '\n');
-    if (next) *next = '\0';
-    if (strcmp(p, title) == 0) {
-      if (next) *next = '\n';
-      return true;
-    }
-    if (next) {
-      *next = '\n';
-      p = next + 1;
-    } else {
-      break;
-    }
-  }
-  return false;
-}
-
-static void set_list_timeline_synced(const char *title, bool sync) {
-  if (!title || !title[0]) return;
-  char synced_lists[256] = {0};
-  if (persist_exists(PERSIST_KEY_TIMELINE_SYNC_LISTS)) {
-    persist_read_string(PERSIST_KEY_TIMELINE_SYNC_LISTS, synced_lists, sizeof(synced_lists));
-  }
-  char new_synced[256] = {0};
-  char *p = synced_lists;
-  while (p && *p) {
-    char *next = strchr(p, '\n');
-    if (next) *next = '\0';
-    if (strcmp(p, title) != 0 && p[0] != '\0') {
-      if (new_synced[0] != '\0') {
-        snprintf(new_synced + strlen(new_synced), sizeof(new_synced) - strlen(new_synced), "\n%s", p);
-      } else {
-        snprintf(new_synced, sizeof(new_synced), "%s", p);
-      }
-    }
-    if (next) {
-      *next = '\n';
-      p = next + 1;
-    } else {
-      break;
-    }
-  }
-  if (sync) {
-    if (new_synced[0] != '\0') {
-      snprintf(new_synced + strlen(new_synced), sizeof(new_synced) - strlen(new_synced), "\n%s", title);
-    } else {
-      snprintf(new_synced, sizeof(new_synced), "%s", title);
-    }
-  }
-  persist_write_string(PERSIST_KEY_TIMELINE_SYNC_LISTS, new_synced);
-}
-
 static uint16_t list_action_get_rows(MenuLayer *ml, uint16_t section, void *ctx) {
   (void)ml;
   (void)section;
   (void)ctx;
-  return 3;
+  return 1;
 }
 
 static void list_action_draw_row(GContext *ctx, const Layer *cell_layer, MenuIndex *idx, void *cb_ctx) {
   (void)cb_ctx;
-  if (idx->row == 0) {
-    menu_cell_basic_draw(ctx, cell_layer, "Delete list", NULL, NULL);
-  } else if (idx->row == 1) {
-    menu_cell_basic_draw(ctx, cell_layer, "Set as Default", NULL, NULL);
-  } else if (idx->row == 2) {
-    bool is_synced = false;
-    if (s_saved_title) {
-      is_synced = is_list_timeline_synced(s_saved_title);
-    }
-    menu_cell_basic_draw(ctx, cell_layer, "Timeline sync", is_synced ? "On" : "Off", NULL);
+  if (idx->row != 0) {
+    return;
   }
+  menu_cell_basic_draw(ctx, cell_layer, "Delete list", NULL, NULL);
 }
 
 static int16_t list_action_get_cell_height(MenuLayer *ml, MenuIndex *idx, void *ctx) {
@@ -124,30 +57,14 @@ static int16_t list_action_get_cell_height(MenuLayer *ml, MenuIndex *idx, void *
 static void list_action_select(MenuLayer *ml, MenuIndex *idx, void *ctx) {
   (void)ml;
   (void)ctx;
-  if (idx->row == 0) {
-    int li = s_list_ix;
-    window_stack_pop(true);
-    s_win = NULL;
-    s_menu = NULL;
-    messaging_send(CMD_W_DELETE_LIST, li, -1, NULL);
-  } else if (idx->row == 1) {
-    if (s_saved_title) {
-      persist_write_string(PERSIST_KEY_DEFAULT_LIST_TITLE, s_saved_title);
-      ui_toast_show("Default list set");
-    }
-    window_stack_pop(true);
-    s_win = NULL;
-    s_menu = NULL;
-  } else if (idx->row == 2) {
-    if (s_saved_title) {
-      bool is_synced = is_list_timeline_synced(s_saved_title);
-      bool new_state = !is_synced;
-      set_list_timeline_synced(s_saved_title, new_state);
-      messaging_send(CMD_W_SET_TIMELINE_SYNC, s_list_ix, -1, new_state ? "1" : "0");
-      ui_toast_show(new_state ? "Sync enabled" : "Sync disabled");
-      menu_layer_reload_data(s_menu);
-    }
+  if (idx->row != 0) {
+    return;
   }
+  int li = s_list_ix;
+  window_stack_pop(true);
+  s_win = NULL;
+  s_menu = NULL;
+  messaging_send(CMD_W_DELETE_LIST, li, -1, NULL);
 }
 
 #ifdef PBL_TOUCH

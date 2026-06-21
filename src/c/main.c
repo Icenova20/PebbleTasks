@@ -51,20 +51,14 @@ static void dictation_cb(DictationSession *session, DictationSessionStatus statu
 }
 
 static void app_init(void) {
-  APP_LOG(APP_LOG_LEVEL_DEBUG, "Init start");
   theme_init();
   ui_assets_init();
   main_menu_init();
-  APP_LOG(APP_LOG_LEVEL_DEBUG, "App message init");
   app_message_register_inbox_received(messaging_inbox_received);
   app_message_open(app_message_inbox_size_maximum(), app_message_outbox_size_maximum());
-  APP_LOG(APP_LOG_LEVEL_DEBUG, "Dictation init");
   s_dictation = dictation_session_create(sizeof(s_dictation_text), dictation_cb, NULL);
-  APP_LOG(APP_LOG_LEVEL_DEBUG, "Pushing main menu");
   window_stack_push(main_menu_get_window(), true);
-  APP_LOG(APP_LOG_LEVEL_DEBUG, "Connection watch init");
   connection_watch_init();
-  APP_LOG(APP_LOG_LEVEL_DEBUG, "Init done");
 }
 
 static void app_deinit(void) {
