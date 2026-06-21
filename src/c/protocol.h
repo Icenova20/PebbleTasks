@@ -16,6 +16,7 @@
 #define CMD_W_SET_TASK_DUE 12
 #define CMD_W_CLEAR_TASK_DUE 13
 #define CMD_W_PIN_TASK 14
+#define CMD_W_SET_TIMELINE_SYNC 15
 
 #define R_LISTS 20
 #define R_OPEN_TASKS 21

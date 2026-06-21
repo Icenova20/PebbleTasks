@@ -6,3 +6,5 @@
 void list_action_menu_show(int list_index, const char *list_title);
 
 void list_action_menu_apply_theme(void);
+
+bool is_list_timeline_synced(const char *title);
